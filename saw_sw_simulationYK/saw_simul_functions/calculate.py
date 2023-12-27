@@ -14,7 +14,7 @@ mueB = 9.27400968e-24
 def calculate(Fields, Angles, params):
     Fields, Angles = Fields/1000, np.deg2rad(Angles)
     eps = {}
-    alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps['xx'], eps['yy'], eps['yy'], eps['xy'], eps['xz'], eps['yz'] = params
+    alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps = params
 
     # Calculation
     # phi0 = np.zeros((len(Angles), len(Fields)))
@@ -40,7 +40,7 @@ def calculate(Fields, Angles, params):
             # test = np.imag(chi[0,0])
 
             # Step 3: derive magnetoelastic driving field
-            h_dr = MagnElasField([phi0, eps['xx'], eps['yy'], eps['yy'], eps['xy'], eps['xz'], eps['yz'], b1, b2])
+            h_dr = MagnElasField([phi0, b1, b2, eps])
 
             # Step 4: derive absorbed power
             P_abs[angle_ind, field_ind] = -AbsPower(h_dr, chi)
@@ -50,6 +50,7 @@ def calculate(Fields, Angles, params):
 
     return P_abs
 
+'''
 def singleCalculate(args):
     field, angle, params = args
     eps = {}
@@ -69,7 +70,7 @@ def singleCalculate(args):
     # Step 4: derive absorbed power
     P_abs = -AbsPower(h_dr, chi)
     return P_abs
-
+'''
 def MinMaxScaling(matrix):
     min_val = np.min(matrix)
     max_val = np.max(matrix)
@@ -140,23 +141,13 @@ class SWcalculator():
                 self.Chi[angle_ind, field_ind] = np.linalg.inv(chi_inv)
 
     def calcH_dr(self, eps):
-        eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz'] = eps
-        xx, yy, zz, xy, xz, yz = eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz']
-        
-        # xx = eps[0]
-        # yy = eps[1]
-        # zz = eps[2]
-        # xy = eps[3]
-        # xz = eps[4]
-        # yz = eps[5]
-
         b1 = self.b1
         b2 = self.b2
 
         for angle_ind, Angle in enumerate(self.Angles):
             for field_ind, Field in enumerate(self.Fields):
                 phi0 = self.Phi0[angle_ind, field_ind]
-                self.H_dr[angle_ind, field_ind] = MagnElasField([phi0, xx, yy, zz, xy, xz, yz, b1, b2])
+                self.H_dr[angle_ind, field_ind] = MagnElasField([phi0, b1, b2, eps])
 
     def calcP_abs(self):
         for angle_ind, Angle in enumerate(self.Angles):
@@ -201,33 +192,33 @@ class SWcalculatorSingle:
     def calcChi(self):
         Field = self.Field
         Angle = self.Angle
+        Phi0 = self.Phi0
         AniType = self.AniType
         mue0Hani = self.mue0Hani
         phiu = self.phiu
         alpha = self.alpha
         A = self.A
         g = self.g
-        mue=Ms = self.mue0Ms
+        mue0Ms = self.mue0Ms
         t = self.t
         k = self.k
         f = self.f
 
 
-        chi_inv = MagnSusceptibility([field, phi0, angle, phiu, mue0Hani, A, mue0Ms, alpha, g, k, f, t, AniType])
+        chi_inv = MagnSusceptibility([Field, Phi0, Angle, phiu, mue0Hani, A, mue0Ms, alpha, g, k, f, t, AniType])
         self.chi = np.linalg.inv(chi_inv)
 
 
     
-    def calcH_dr(eps):
-        eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz'] = eps
+    def calcH_dr(self, eps):
         phi0 = self.Phi0
         b1 = self.b1
         b2 = self.b2
 
-        self.h_dr = MagnElasField([phi0, eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz'], b1, b2])
+        self.h_dr = MagnElasField([phi0, b1, b2, eps])
 
 
-    def calcP_abs():
+    def calcP_abs(self):
         h_dr = self.h_dr
         chi = self.chi
         self.P_abs = -AbsPower(h_dr, chi)

@@ -1,13 +1,14 @@
 import os
-import sys
 from my_modules import *
 from saw_simul_functions import *
 import time
 
 name='Rayleigh'
 Angles, Fields, params = GetParams(name)
-# params_ = params[:12]
-# eps = params[12:]
+# Angles = 20
+# Fields = 20
+params_ = params[:12]
+eps = params[12]
 # print(eps)
 # mySimulator = SWcalculator(Fields, Angles, params_)
 # mySimulator.calcPhi0()
@@ -15,9 +16,11 @@ Angles, Fields, params = GetParams(name)
 # mySimulator.calcH_dr(eps)
 # mySimulator.calcP_abs()
 
-# start_time = time.time()
-P_abs = calculate(Fields, Angles, params)
 
+
+# start_time = time.time()
+
+P_abs = calculate(Fields, Angles, params)
 # P_abs = mySimulator.P_abs
 
 # elapsed_time = time.time() - start_time

@@ -56,6 +56,7 @@ def GetParams(name='Rayleigh'):
     else: print('false Name !')
 
 
-    params = [alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz']]
+    # params = [alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz']]
+    params = [alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps]
 
     return Angles, Fields, params

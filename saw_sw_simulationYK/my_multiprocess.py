@@ -14,14 +14,9 @@ epsilonList = []
 def process_combination(params):
     combination, mySimulator = params
     copySimulator = copy.deepcopy(mySimulator)
-    # Angles = np.linspace(-90, 90, num=41)
-    # Fields = np.linspace(-50, 50, num=51)
-    # alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, k, b1, b2, f, t = params_
     eps = combination
-    # params = [alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, k, eps['xx'], eps['yy'], eps['yy'], eps['xy'], eps['xz'], eps['yz'], b1, b2, f, t]
     copySimulator.calcH_dr(eps)
     copySimulator.calcP_abs()
-    # P_abs = calculate(Fields, Angles, params)
     P_abs = copySimulator.P_abs
     Fields = copySimulator.Fields
     Angles = copySimulator.Angles
@@ -34,7 +29,6 @@ def process_combination(params):
             print(f'Found {name}')
         else: print('skipped -- no symmetrie')
 
-        
 
 
 def main():
