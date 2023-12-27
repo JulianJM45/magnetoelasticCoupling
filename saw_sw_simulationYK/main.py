@@ -1,8 +1,7 @@
 import os
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
 from my_modules import *
-from saw_sw_simulationYK.saw_simul_functions import *
+from saw_simul_functions import *
 import time
 
 name='Rayleigh'
