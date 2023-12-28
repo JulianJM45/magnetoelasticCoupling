@@ -1,8 +1,6 @@
 import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
 from my_modules import *
-from saw_sw_simulationYK.saw_simul_functions import *
+from saw_simul_functions import *
 import itertools
 import multiprocessing
 from tqdm import tqdm
@@ -25,7 +23,7 @@ def process_combination(params):
 
     if CheckMax(Fields, Angles, P_abs):
         if CheckSymmetrie(Fields, Angles, P_abs):
-            epsilonList.append(non_zero_eps)
+            manager.epsilonList.append(non_zero_eps)
             print(f'Found {name}')
         else: print('skipped -- no symmetrie')
 
@@ -65,6 +63,10 @@ def main():
     num_processes = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(processes=num_processes)
 
+    # Create a Manager
+    manager = multiprocessing.Manager()
+    manager.epsilonList = []
+
 
     # Prepare parameters for parallel processing
     # params_list = [(combination, params_) for combination in all_combinations]
@@ -81,13 +83,8 @@ def main():
 
        # Save the result_list to a .txt file
     with open('non_zero_eps_list.txt', 'w') as file:
-        for item in epsilonList:
+        for item in manager.epsilonList:
             file.write(f"{item}\n")
-
-
-
-
-
 
 
 

@@ -1,6 +1,5 @@
 import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
+
 from my_modules import *
 
 
@@ -82,9 +81,7 @@ def splitData(Powers, Fields, S12):
     return fields, s12
   
 
-def get_plot_colors(num_colors):
-    colors = plt.cm.rainbow(np.linspace(0, 1, num_colors))
-    return colors
+
 
 
 

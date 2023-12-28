@@ -1,17 +1,17 @@
-
 import os
 from my_modules import *
-from saw_sw_simulationYK.saw_simul_functions import *
+from saw_simul_functions import *
 from scipy.optimize import curve_fit
 from multiprocessing import Pool
 
 name = 'Rayleigh'
-if name == 'Rayleigh': input_filepath = r'C:\Users\Julian\Documents\BA\Field_and_Angle_Sweep#3\M06\PostTG_Rayleigh.txt'
+# if name == 'Rayleigh': input_filepath = r'C:\Users\Julian\Documents\BA\Field_and_Angle_Sweep#3\M06\PostTG_Rayleigh.txt'
+input_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
 
 
 Angles, Fields, params = GetParams(name)
 eps = {}
-alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz'] = params
+alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps = params
 
 def InitialGuess():
     alpha = 0.008
@@ -25,7 +25,7 @@ def InitialGuess():
     return alpha, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi
 
 def main():
-    Fields, Angles, P_abs = loadData(input_filepath)
+    Fields, Angles, P_abs = loadData()
 
     initial_guess = InitialGuess()
 
@@ -63,7 +63,8 @@ def CalculationSweep(x, *fitparams):
    eps = MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi)
    eps['yy'] = 0
    eps['zz'] = 0
-   params = alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps['xx'], eps['yy'], eps['yy'], eps['xy'], eps['xz'], eps['yz'] 
+   eps = eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz']
+   params = alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps
 
    with Pool() as p:
        P_abs = p.map(singleCalculate, [(field, angle, params) for (field, angle) in x])
@@ -102,9 +103,14 @@ def MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_
 
 
 
-def loadData(input_filepath):
+def loadData():
+    # Define file paths
+    if name == 'Rayleigh': filename = 'PostTG_Rayleigh.txt'
+    elif name == 'Sezawa': filename = 'PostTG_Sezawa.txt'
+    else: print('no file for this name')
+    filepath = os.path.join(input_folder, filename)
     # Read the data from the .txt file
-    data = np.loadtxt(input_filepath, dtype=float, skiprows=1)
+    data = np.loadtxt(filepath, dtype=float, skiprows=1)
 
     #Extract columns
     Fields = data[:, 0]

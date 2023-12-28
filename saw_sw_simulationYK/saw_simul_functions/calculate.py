@@ -50,11 +50,11 @@ def calculate(Fields, Angles, params):
 
     return P_abs
 
-'''
+
 def singleCalculate(args):
     field, angle, params = args
     eps = {}
-    alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps['xx'], eps['yy'], eps['yy'], eps['xy'], eps['xz'], eps['yz'] = params
+    alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps = params
     # Step 1: find Magnetic equilibrium
     # phi0 = MinimizeGJu([field, angle, AniType, phiu, mue0Hani])
     phi0 = MinimizeGFast(field, angle)
@@ -65,12 +65,12 @@ def singleCalculate(args):
     # test = np.imag(chi[0,0])
 
     # Step 3: derive magnetoelastic driving field
-    h_dr = MagnElasField([phi0, eps['xx'], eps['yy'], eps['yy'], eps['xy'], eps['xz'], eps['yz'], b1, b2])
+    h_dr = MagnElasField([phi0, b1, b2, eps])
 
     # Step 4: derive absorbed power
     P_abs = -AbsPower(h_dr, chi)
     return P_abs
-'''
+
 def MinMaxScaling(matrix):
     min_val = np.min(matrix)
     max_val = np.max(matrix)

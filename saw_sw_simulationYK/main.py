@@ -32,9 +32,9 @@ cmPlot(P_abs, Fields, Angles, name=name)
 
 
 
-# CheckMax(Fields, Angles, P_abs)
+# print(CheckMax(Fields, Angles, P_abs))
 
-# CheckSymmetrie(Fields, Angles, P_abs)
+# print(CheckSymmetrie(Fields, Angles, P_abs))
 
 
 # params_ = params[:12]

@@ -1,22 +1,22 @@
 import numpy as np
-from scipy.optimize import minimize
+import matplotlib.pyplot as plt
 
-Angles = np.linspace(-90, 90, num=91)
+# Your data, replace this with your actual data
+data = np.array([[1, 2, np.nan, 4],
+                 [5, np.nan, 7, 8],
+                 [9, 10, 11, 12]])
 
+# Create an array of x values for each column
+x_values = np.arange(data.shape[1])
 
+# Create a meshgrid for x and y values
+x, y = np.meshgrid(x_values, np.arange(data.shape[0]))
 
+# Plot using pcolormesh, ignoring NaN values
+plt.pcolormesh(x, y, data, edgecolors='k', linewidth=2, cmap='viridis')
 
-
-
-def total_energy(phi, mue0H, phiH, AniType, mue0Hani, phiu):
-    G_Zeeman = -mue0H * np.cos(phiH - phi)
-    if AniType == 0:
-        G_Ani = -mue0Hani/2 * (np.cos(phiu - phi))**2
-    elif AniType == 1:
-        G_Ani = -mue0Hani/2 * (np.cos(phiu - phi))**2 * (np.sin(phiu - phi))**2
-    elif AniType == 2:
-        G_Ani = -mue0Hani/2 * (np.cos(3*(phiu - phi)/2))**2
-    elif AniType == 3:
-        G_Ani = -mue0Hani/2 * (np.cos(3*(phiu - phi)))**2
-    G = G_Zeeman + G_Ani
-    return G
+# Set labels and show the plot
+plt.xlabel('X-axis')
+plt.ylabel('Y-axis')
+plt.colorbar(label='Values')
+plt.show()

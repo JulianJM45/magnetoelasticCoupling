@@ -5,8 +5,11 @@ hbar = 1.05457173e-34
 mue0 = 4 * np.pi * 1e-7
 mueB = 9.27400968e-24
 
-# Simulated SAW
-f = 2.43e9
+
+#  SAW 
+k = 6.73e6
+f = 2.45e9
+f = 3.53e9
 omega0 = 2 * np.pi * f
 # Structure Properties
 Hk = 0
@@ -15,7 +18,7 @@ Deff = 0
 
 
 
-def allHres(Angles, t, k, A, g, mue0Hani, mue0Ms):
+def allHres(Angles, t, A, g, mue0Hani, mue0Ms):
 
     """
     Calculate the magnetic field for different angles.
@@ -33,6 +36,8 @@ def allHres(Angles, t, k, A, g, mue0Hani, mue0Ms):
     # A, g, mue0Hani, mue0Ms, Hk, phiu, Deff = fitparams
     # t = 1.0 * 100e-9
     # g = 2.0269
+
+    Angles = np.radians(Angles)
     
     GSW = (1 - np.exp(-np.abs(k) * t)) / (np.abs(k) * t)
     Ms = mue0Ms / mue0

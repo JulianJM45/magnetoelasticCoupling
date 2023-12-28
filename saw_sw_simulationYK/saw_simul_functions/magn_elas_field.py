@@ -27,7 +27,10 @@ def MagnElasField(Input):
     phi0 = Input[0]
     b1, b2 = Input[1:3]
     eps = Input[3]
-    xx, yy, zz, xy, xz, yz = eps.values()
+    if isinstance(eps, dict):
+        xx, yy, zz, xy, xz, yz = eps.values()
+    else: xx, yy, zz, xy, xz, yz = eps
+    
     cos_phi0 = np.cos(phi0)
     sin_phi0 = np.sin(phi0)
     cos_2_phi0 = np.cos(2 * phi0)

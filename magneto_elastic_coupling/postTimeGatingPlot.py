@@ -1,6 +1,4 @@
 import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
 from my_modules import *
 import numpy as np
 
@@ -8,20 +6,18 @@ import numpy as np
 # Define the angle offset
 alpha = 50
 
+
+input_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
+# output_folder = r'C:\Users\Julian\Documents\BA\Field_and_Angle_Sweep#3
+output_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
+
 name = 'Rayleigh'
 
-# Define file paths
-if name == 'Rayleigh': input_filepath = r'C:\Users\Julian\Documents\BA\Field_and_Angle_Sweep#3\M06\TimeGatedM06.txt'
-if name == 'Sezawa': input_filepath = r'C:\Users\Julian\Documents\BA\Field_and_Angle_Sweep#3\M03\TimeGatedM03.txt'
-# input_filepath='./magneto_elastic_coupling/TimeGatedM06.txt'
-
-if name == 'Rayleigh': output_folder = r'C:\Users\Julian\Documents\BA\Field_and_Angle_Sweep#3\M06'
-if name == 'Sezawa': output_folder = r'C:\Users\Julian\Documents\BA\Field_and_Angle_Sweep#3\M03'
-
-
 def main():
+    
+
     # Angle_column, setField_column, Field_column, S12_column = loadData(input_filepath)
-    Angles, setFields, Fields, S12 = loadData(input_filepath)
+    Angles, setFields, Fields, S12 = loadData()
 
     unique_angles = np.unique(Angles)
     unique_fields = np.unique(Fields)
@@ -32,20 +28,22 @@ def main():
 
     Angles, Fields = updateColums(Angles, Fields)
 
-    # new_data = np.column_stack((Fields, Angles, DeltaS12))
+    # PlotOneAngle(name, Fields, Angles, DeltaS12, angles=[0, 44, 88])
 
-    # exportData(new_data)
+    new_data = np.column_stack((Fields, Angles, DeltaS12))
 
-    # ResFields = resonanceFields(new_data, save=False)
+    exportData(new_data)
 
-    X, Y, Z = CreateMatrix(Fields, Angles, DeltaS12)
+    # ResFields = resonanceFields(new_data, save=True)
+
+    # X, Y, Z = CreateMatrix(Fields, Angles, DeltaS12)
 
 
-    Z = FillMatrix(Z)
+    # Z = FillMatrix(Z)
 
     # Z = MinMaxScaling(Z)
 
-    cmPlot(Z, Fields, Angles, name='Rayleigh', show=True, save=True)
+    # cmPlot(Z, Fields, Angles, name=name, vmin=0, show=True, save=True)
 
 
     # CheckMax(Fields, Angles, Z)
@@ -53,13 +51,41 @@ def main():
     # CheckSymmetrie(Fields, Angles, Z)
 
 
-def loadData(input_filepath):
+
+def PlotOneAngle(name, Fields, Angles, DeltaS12, angles=[0]):
+    mygraph = Graph()
+    colors = get_plot_colors(len(angles))
+    for i, angle in enumerate(angles):
+        mask = Angles == angle
+        fields = Fields[mask]
+        deltaS12 = DeltaS12[mask]
+        color = colors[i]
+        mygraph.add_plot(fields, deltaS12, label=f'{angle}°', color=color)
+    mygraph.plot_Graph(safe=True, legend=True, xlabel='$\mu_0 H$ in mT', ylabel='$\Delta S12$ in dB', name=f'singleAngle_{name}')
+
+
+
+
+def loadData():
+    # Define file paths
+    if name == 'Rayleigh': filename = 'TimeGated2.45.txt'
+    elif name == 'Sezawa': filename = 'TimeGated3.53.txt'
+    else: print('no file for this name')
+    filepath = os.path.join(input_folder, filename)
+
     # Read the data from the .txt file
-    data = np.loadtxt(input_filepath, dtype=float, skiprows=1)
+    data = np.loadtxt(filepath, dtype=float, skiprows=1)
 
     # Extract the angles
     Angle_column = data[:, 0]
     data = data[(Angle_column > -90) & (Angle_column <= 90)]
+
+    # Extract the fields
+    setField_column = data[:, 1]
+    if name == 'Rayleigh': maxfield = 45e-3
+    elif name == 'Sezawa': maxfield = 80e-3
+    else: print('no fieldborder for this name')
+    data = data[(setField_column >= -maxfield) & (setField_column <= maxfield)]
 
     #Extract columns
     setField_column = data[:, 1]
@@ -132,21 +158,20 @@ def exportData(new_data):
 def resonanceFields(new_data, save=False):
     # Get resonance fields
     unique_angles = np.unique(new_data[:, 1])
-    min_fields = []
+    max_fields = []
     for angle in unique_angles:
         angle_data = new_data[new_data[:,1] == angle]
-        min_index = np.argmin(angle_data[:, 2])
-        min_field = np.abs(angle_data[min_index, 0])
-        min_fields.append((angle, min_field))
+        max_index = np.argmax(angle_data[:, 2])
+        max_field = np.abs(angle_data[max_index, 0])
+        max_fields.append((angle, max_field))
 
-    min_fields = np.array(min_fields)
-
+    axn_fields = np.array(max_fields)
     if save: 
         header = np.array(["Angle in °", "Field in mT"])
         output_filepath = os.path.join(output_folder, f'ResFields_{name}.txt')
-        np.savetxt(output_filepath, min_fields, header='\t'.join(header), comments='', delimiter='\t', fmt='%.6e')
+        np.savetxt(output_filepath, max_fields, header='\t'.join(header), comments='', delimiter='\t', fmt='%.6e')
     
-    return min_fields
+    return max_fields
 
 def CreateMatrix(Fields, Angles, DeltaS12):
     unique_fields = np.unique(Fields)

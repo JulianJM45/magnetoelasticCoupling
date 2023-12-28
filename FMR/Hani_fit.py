@@ -1,35 +1,40 @@
 import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
 from my_modules import *
 import numpy as np
 from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
 
-importfolder = r'C:\Users\Julian\Documents\BA\FMR#3'
+# importfolder = r'C:\Users\Julian\Documents\BA\FMR#3'
+importfolder = '/home/julian/BA/dataForPython/FMR#3/H_resFields'
+output_folder = '/home/julian/BA/pictures'
 
+alpha = 0
 
 def main():
     filename = 'HaniFits.txt'
     Angles, Hani = GetData(filename)
 
-    fit1Hani = Fit1(Angles, Hani)
+    fit1Hani = CosinusAndLinearFit(Angles, Hani)
+
+    global alpha
+    Angles = np.array(Angles)-alpha
+
 
     Hani2 = Hani - fit1Hani
-    fit2Hani = Fit2(Angles, Hani2)
+
+    # fit2Hani = Fit2(Angles, Hani2)
 
 
-    Hani3 = Hani2 -fit2Hani
-    fit3Hani = Fit3(Angles, Hani3)
+    # Hani3 = Hani2 -fit2Hani
+    # fit3Hani = Fit3(Angles, Hani3)
 
-    Hani4 = Hani3 - fit3Hani
-    fit4Hani = Fit4(Angles, Hani)
+    # Hani4 = Hani3 - fit3Hani
+    # fit4Hani = Fit4(Angles, Hani)
 
-    Hani5 = Hani4 - fit4Hani
+    # Hani5 = Hani4 - fit4Hani
 
     
-    Checkplot(Angles, Hani4, fit4Hani)
-    GraphPlot(Angles, Hani5)
+    # Checkplot(Angles, Hani, fit1Hani)
+    GraphPlot(Angles, Hani2, save=True, name='Hani_sixfold', xlabel='Angle in °', ylabel='$\~{H}_\mathrm{ani}$ in mT')
 
 
 def Fit4(Angles, Hani4):
@@ -86,9 +91,9 @@ def Fit1(Angles, Hani):
 
     return fit1Hani
 
-def Fit1Lin(Angles, Hani):
+def CosinusAndLinearFit(Angles, Hani):
     initial_guess = [-0.0012, 1, 30, 0.0006, 1e-6]
-    params, covariance = curve_fit(CosinusAndLinearFit, Angles, Hani, p0=initial_guess)
+    params, covariance = curve_fit(CosinusAndLinearCalc, Angles, Hani, p0=initial_guess)
     a, b, c, d, m = params
     print(f'a: {a}')
     print(f'b: {b}')
@@ -96,26 +101,29 @@ def Fit1Lin(Angles, Hani):
     print(f'd: {d}')
     print(f'm: {m}')
 
-    fit1Hani = CosinusAndLinearFit(Angles, a, b, c, d, m)
+    global alpha
+    alpha = int(c)
+
+    fit1Hani = CosinusAndLinearCalc(Angles, a, b, c, d, m)
 
     return fit1Hani
 
 # def CosinusFit(angle, a, b, c):
 #     return (a*np.cos(b*(np.deg2rad(angle) - np.deg2rad(c))))
 
-def SinusFit(angle, a, b, c):
+def SinusCalc(angle, a, b, c):
     return (a*np.sin(b*(np.deg2rad(angle) - np.deg2rad(c))))
 
-def BetragFit(angle, a, b):
+def BetragCalc(angle, a, b):
     return (a * np.abs(angle) + b)
 
-def CosinusFit(angle, a, b, c, d):
+def CosinusCalc(angle, a, b, c, d):
     return (a*(np.cos(b*(np.deg2rad(angle) - np.deg2rad(c))))**2+d)
 
-def CosinusAndLinearFit(angle, a, b, c, d, m):
+def CosinusAndLinearCalc(angle, a, b, c, d, m):
     return (a*(np.cos(b*(np.deg2rad(angle) - np.deg2rad(c))))**2+d + m*angle)
 
-def SixfoldFit(angle, k1, k2):
+def SixfoldCalc(angle, k1, k2):
     term1 = k1/12 *(7 - 8 + 4)
     term2 = k2/108 * (-24 + 45 - 24 + 4 + np.cos(6 * np.deg2rad(angle)))
     return (term1 + term2)
@@ -129,15 +137,11 @@ def GetData(filename):
 
 
 
-def Checkplot(Angles, Hani, Fit):
-    sorted_data1 = sorted(zip(Angles, Hani), key=lambda pair: pair[0])
-    sorted_data2 = sorted(zip(Angles, Fit), key=lambda pair: pair[0])
-    Angles, Hani = zip(*sorted_data1)
-    Angles, Fit = zip(*sorted_data2)
-    plt.plot(Angles, Fit)
-    plt.scatter(Angles, Hani)
-    plt.show()
-    plt.clf()
+def Checkplot(Angles, Hani, Fit, save=False, name=''):
+    mygraph = Graph()
+    mygraph.add_plot(Angles, Fit*1e3, color='r', label='$cos²$ + linear Fit')
+    mygraph.add_scatter(Angles, Hani*1e3, label='Messdaten')
+    mygraph.plot_Graph(safe=True, legend=True, name='Hani_fit', xlabel='Angle in °', ylabel='$H_\mathrm{ani}$ in mT')
 
 
 
