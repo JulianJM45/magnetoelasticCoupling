@@ -32,6 +32,8 @@ def process_combination(params):
 def main():
     # Your parameter initialization here...
     Angles, Fields, params = GetParams()
+    Angles = np.linspace(-90, 90, num=41)
+    Fields = np.linspace(-50, 50, num=51)
     params_ = params[:12]
 
     mySimulator = SWcalculator(Fields, Angles, params_)
@@ -50,7 +52,9 @@ def main():
     }
 
     # Values for real and imaginary parts to sweep through
-    values = [-1, 0.5, 0, 0.5, 1]
+    # values = [-1, 0.5, 0, 0.5, 1]
+    values = np.linspace(-1, 1, num=5)
+    print(values)
 
     # Generate all combinations for each key (excluding zz)
     combinations_per_key = {key: [complex(real, imag) for real in values for imag in values] if key not in ['yy', 'zz'] else [0] for key in eps}

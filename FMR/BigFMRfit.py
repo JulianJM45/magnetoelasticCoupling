@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import numpy as np
 from my_modules import *
+import scipy
 from scipy.optimize import curve_fit
 from sklearn.metrics import r2_score
 
@@ -13,16 +14,25 @@ LEN = 0
 
 Gfit = 0
 
+#constants
+h = scipy.constants.h
+mue_B = scipy.constants.e * scipy.constants.hbar /  (2* scipy.constants.m_e)
+
+
 def main():
     frequency, H, dHres, dHres_err = getData()
 
     g_fit, Ms_fit, Hani_fit_dict = KittelFit(frequency, H)
 
+    meanHani = np.mean(list(Hani_fit_dict.values()))
+    f = 3.53e9
+    print(invert_kittel_equation(f, g_fit, Ms_fit, meanHani))
+
     # exportData(Hani_fit_dict)
 
     # KittelPlot(g_fit, Ms_fit, Hani_fit_dict)
 
-    alpha_fit, dHinhomo_fit_dict = LinewidthFit(frequency, dHres)
+    # alpha_fit, dHinhomo_fit_dict = LinewidthFit(frequency, dHres)
 
     # LinewidthPlot(alpha_fit, dHinhomo_fit_dict)
 
@@ -166,17 +176,10 @@ def getData():
 
 # invert_kittel_equation
 def invert_kittel_equation(f, g, Ms, Hani):
-    # Constants
-    hbar = 1.054571817e-34
-    mu_B = 9.2740100783e-24
-    pi = np.pi
-
-    Hani = Hani / mu_B
-    Ms = Ms / mu_B
     # Coefficients for the quadratic equation
     a = 1
     b = 2 * Hani + Ms
-    c = Hani**2 + Hani * Ms - (4 * pi**2 * hbar**2) / (g**2 * mu_B**2 * f**2)
+    c = Hani * (Hani + Ms) - ((f * h) / (g * mue_B))**2
 
     # Calculate the discriminant
     discriminant = b**2 - 4 * a * c
@@ -184,8 +187,8 @@ def invert_kittel_equation(f, g, Ms, Hani):
     # Check if the discriminant is non-negative for real solutions
     if discriminant >= 0:
         # Calculate the two possible solutions
-        root1 = mu_B*(-b + np.sqrt(discriminant)) / (2 * a)
-        root2 = mu_B*(-b - np.sqrt(discriminant)) / (2 * a)
+        root1 = (-b + np.sqrt(discriminant)) / (2 * a)
+        root2 = (-b - np.sqrt(discriminant)) / (2 * a)
         
         return root1
     else:
@@ -197,7 +200,7 @@ def invert_kittel_equation(f, g, Ms, Hani):
 # Define the Kittel equation
 def kittel_equation(H, g, Ms, Hani):
     sqrt_term = np.sqrt((H + Hani) * (H + Hani + Ms))
-    result = ((g * 9.2740100783e-24 / (2 * np.pi * 1.054571817e-34)) * sqrt_term)
+    result = ((g * mue_B / h) * sqrt_term)
     return result
 
 def kittel_equationALL(H_fields, g, Ms, *Hani_values):
@@ -209,7 +212,7 @@ def kittel_equationALL(H_fields, g, Ms, *Hani_values):
         H_subset = H_fields[i * LEN: (i + 1) * LEN]
         for H in H_subset:
             sqrt_term = np.sqrt((H + Hani) * (H + Hani + Ms))
-            result.append((g * 9.2740100783e-24 / (2 * np.pi * 1.054571817e-34)) * sqrt_term)
+            result.append((g * mue_B / h) * sqrt_term)
     return result
 
 # Define linewidth equation

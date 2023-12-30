@@ -8,7 +8,7 @@ import os
 output_folder = '/home/julian/BA/pictures'
 # outputfolder = r'C:\Users\Julian\Pictures\BA'
 
-def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', outputfolder=output_folder, show=True, save=False, savePNG=False, cmap='hot_r', width_cm = 16, height_cm = 9, vmin=None):
+def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', ylabel='$\phi$ in °', outputfolder=output_folder, show=True, save=False, savePDF=False, cmap='hot_r', width_cm = 16, height_cm = 9, equalBounds=False, vmin=None):
     if isinstance(X, np.ndarray):
         unique_angles = np.unique(Y)
         unique_fields = np.unique(X)
@@ -27,9 +27,11 @@ def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', outputfolder=output_folder,
     vmax=np.max(Z)
     if vmin is None:
         vmin=np.min(Z)
-        # vmax_abs = np.max(np.abs(Z))
-        # vmin = -vmax_abs
-        # vmax = vmax_abs
+
+    if equalBounds:
+        vmax_abs = np.max(np.abs(Z))
+        vmin = -vmax_abs
+        vmax = vmax_abs
     pcm = plt.pcolormesh(
         X, Y, Z,
         cmap=cmap,
@@ -49,7 +51,7 @@ def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', outputfolder=output_folder,
     plt.rcParams['font.sans-serif'] = 'Arial'
     cbar.ax.set_title('$\Delta$$S12$ in dB', fontsize=fontsize)
     plt.xlabel('$\mu_0H$ in mT', fontsize=fontsize)
-    plt.ylabel('Angle in °', fontsize=fontsize)
+    plt.ylabel(ylabel, fontsize=fontsize)
     # plt.title('Colormap of $\Delta$$S_{12}$ '+f'for {name} mode', fontsize=fontsize)
     plt.xticks(fontsize=fontsize)  
     plt.yticks(fontsize=fontsize)
@@ -57,11 +59,11 @@ def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', outputfolder=output_folder,
 
     # Save the plot as an image file (e.g., PNG)
     if save: 
-        output_filepath = os.path.join(outputfolder, f'ColorMap{name}.pdf')
+        output_filepath = os.path.join(outputfolder, f'ColorMap{name}.png')
         plt.savefig(output_filepath, dpi=300, bbox_inches='tight')
 
-    if savePNG:
-        output_filepath = os.path.join(outputfolder, f'ColorMap{name}.PNG')
+    if savePDF:
+        output_filepath = os.path.join(outputfolder, f'ColorMap{name}.pdf')
         plt.savefig(output_filepath, dpi=300, bbox_inches='tight')
 
     # Show the final plot with all heatmaps
