@@ -1,11 +1,12 @@
 import os
 from my_modules import *
 import numpy as np
+from scipy.optimize import curve_fit
 
 
 # Define the angle offset
-alpha = 50
-
+alpha = 48
+# alpha = 0
 
 input_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
 # output_folder = r'C:\Users\Julian\Documents\BA\Field_and_Angle_Sweep#3
@@ -26,19 +27,21 @@ def main():
 
     DeltaS12 = deltaS12(Angles, S12, average_s12, unique_angles)
 
+    # DeltaS12 = -S12
+
     Angles, Fields = updateColums(Angles, Fields)
 
     # PlotOneAngle(name, Fields, Angles, DeltaS12, angles=[0, 44, 88])
 
     new_data = np.column_stack((Fields, Angles, DeltaS12))
 
-    exportData(new_data)
+    # exportData(new_data)
 
-    # ResFields = resonanceFields(new_data, save=True)
+    ResFields = resonanceFields(new_data, save=True)
 
+    # calcOffset(ResFields)
+    
     # X, Y, Z = CreateMatrix(Fields, Angles, DeltaS12)
-
-
     # Z = FillMatrix(Z)
 
     # Z = MinMaxScaling(Z)
@@ -52,16 +55,46 @@ def main():
 
 
 
+
+
+def calcOffset(ResFields):
+    mygraph = Graph()
+    Angles = np.array(list(ResFields.keys()))
+    Fields = np.array(list(ResFields.values()))
+
+    initial_guess = [15, 1, 50, 25]
+    params, covariance = curve_fit(cosFunc, Angles, Fields, p0=initial_guess)
+    a, b, c, d = params
+    fields = cosFunc(Angles, a, b, c, d)
+    
+    print(f'alpha = {c}')
+
+    mygraph.add_scatter(ResFields.keys(), ResFields.values())
+    mygraph.add_plot(ResFields.keys(), fields)
+    
+    mygraph.plot_Graph()
+
+
+def cosFunc(x, a, b, c, d):
+    return a*np.cos(b * np.deg2rad(x-c))+d
+
+
+
+
 def PlotOneAngle(name, Fields, Angles, DeltaS12, angles=[0]):
     mygraph = Graph()
     colors = get_plot_colors(len(angles))
+    if name == 'Rayleigh': x0=34.23
+    if name == 'Sezawa': x0=62.82
+    mygraph.add_vline(x=x0, color='yellow')
+    mygraph.add_vline(x=-x0, color='yellow')
     for i, angle in enumerate(angles):
         mask = Angles == angle
         fields = Fields[mask]
         deltaS12 = DeltaS12[mask]
         color = colors[i]
         mygraph.add_plot(fields, deltaS12, label=f'{angle}°', color=color)
-    mygraph.plot_Graph(safe=True, legend=True, xlabel='$\mu_0 H$ in mT', ylabel='$\Delta S12$ in dB', name=f'singleAngle_{name}')
+    mygraph.plot_Graph(save=False, legend=True, xlabel='$\mu_0 H$ in mT', ylabel='$\Delta S12$ in dB', name=f'singleAngle_{name}')
 
 
 
@@ -158,18 +191,19 @@ def exportData(new_data):
 def resonanceFields(new_data, save=False):
     # Get resonance fields
     unique_angles = np.unique(new_data[:, 1])
-    max_fields = []
+    max_fields = {}
     for angle in unique_angles:
         angle_data = new_data[new_data[:,1] == angle]
         max_index = np.argmax(angle_data[:, 2])
         max_field = np.abs(angle_data[max_index, 0])
-        max_fields.append((angle, max_field))
+        max_fields[angle] = max_field
 
-    axn_fields = np.array(max_fields)
     if save: 
         header = np.array(["Angle in °", "Field in mT"])
         output_filepath = os.path.join(output_folder, f'ResFields_{name}.txt')
-        np.savetxt(output_filepath, max_fields, header='\t'.join(header), comments='', delimiter='\t', fmt='%.6e')
+        dtype = [('angle', float), ('max_field', float)]
+        max_fields_array = np.array([(angle, max_field) for angle, max_field in max_fields.items()], dtype=dtype)
+        np.savetxt(output_filepath, max_fields_array, header='\t'.join(header), comments='', delimiter='\t', fmt='%.6e')
     
     return max_fields
 
@@ -208,8 +242,6 @@ def FillMatrix(Z):
                     Z[row_index, i] = row[nearest_non_empty_index]
 
     return Z
-
-
 
 
 

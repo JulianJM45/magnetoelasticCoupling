@@ -26,7 +26,7 @@ def GetParams(name='Rayleigh'):
 
 
     if name == 'Rayleigh':
-        Fields = np.linspace(-50, 50, num=101) 
+        Fields = np.linspace(-45, 45, num=101) 
         # Simulated SAW
         k =  4670000
         f = 2.43e9

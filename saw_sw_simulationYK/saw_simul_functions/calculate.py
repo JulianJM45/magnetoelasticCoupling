@@ -149,12 +149,14 @@ class SWcalculator():
                 phi0 = self.Phi0[angle_ind, field_ind]
                 self.H_dr[angle_ind, field_ind] = MagnElasField([phi0, b1, b2, eps])
 
-    def calcP_abs(self):
+    def calcP_abs(self, scale=False):
         for angle_ind, Angle in enumerate(self.Angles):
             for field_ind, Field in enumerate(self.Fields):
                 h_dr = self.H_dr[angle_ind, field_ind]
                 chi = self.Chi[angle_ind, field_ind]
                 self.P_abs[angle_ind, field_ind] = -AbsPower(h_dr, chi)
+
+        if scale: self.P_abs = MinMaxScaling(self.P_abs)
 
     
     

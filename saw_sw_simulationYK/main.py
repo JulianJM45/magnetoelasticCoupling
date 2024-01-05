@@ -10,24 +10,24 @@ Angles, Fields, params = GetParams(name)
 params_ = params[:12]
 eps = params[12]
 # print(eps)
-# mySimulator = SWcalculator(Fields, Angles, params_)
-# mySimulator.calcPhi0()
-# mySimulator.calcChi()
-# mySimulator.calcH_dr(eps)
-# mySimulator.calcP_abs()
+mySimulator = SWcalculator(Fields, Angles, params_)
+mySimulator.calcPhi0()
+mySimulator.calcChi()
 
 
+start_time = time.time()
 
-# start_time = time.time()
+mySimulator.calcH_dr(eps)
+mySimulator.calcP_abs(scale=True)
+P_abs = mySimulator.P_abs
 
-P_abs = calculate(Fields, Angles, params)
-# P_abs = mySimulator.P_abs
+# P_abs = calculate(Fields, Angles, params)
 
-# elapsed_time = time.time() - start_time
-# print (f'elapsed time:  {elapsed_time} s')
+elapsed_time = time.time() - start_time
+print (f'elapsed time:  {elapsed_time} s')
 
 
-cmPlot(P_abs, Fields, Angles, name=name)
+cmPlot(P_abs, Fields, Angles, name=f'{name}_Fit1', save=True)
 
 
 
