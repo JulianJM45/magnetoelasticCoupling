@@ -140,9 +140,11 @@ class SWcalculator():
                 chi_inv = MagnSusceptibility([Field, phi0, Angle, phiu, mue0Hani, A, mue0Ms, alpha, g, k, f, t, AniType])
                 self.Chi[angle_ind, field_ind] = np.linalg.inv(chi_inv)
 
-    def calcH_dr(self, eps):
-        b1 = self.b1
-        b2 = self.b2
+    def calcH_dr(self, b1=None, b2=None, eps=None):
+        if b1 is None:
+            b1 = self.b1
+        if b2 is None:
+            b2 = self.b2
 
         for angle_ind, Angle in enumerate(self.Angles):
             for field_ind, Field in enumerate(self.Fields):
@@ -212,11 +214,12 @@ class SWcalculatorSingle:
 
 
     
-    def calcH_dr(self, eps):
+    def calcH_dr(self, b1=None, b2=None, eps=None):
+        if b1 is None:
+            b1 = self.b1
+        if b2 is None:
+            b2 = self.b2
         phi0 = self.Phi0
-        b1 = self.b1
-        b2 = self.b2
-
         self.h_dr = MagnElasField([phi0, b1, b2, eps])
 
 

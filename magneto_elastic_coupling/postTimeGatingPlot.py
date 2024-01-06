@@ -2,7 +2,7 @@ import os
 from my_modules import *
 import numpy as np
 from scipy.optimize import curve_fit
-
+from collections import defaultdict
 
 # Define the angle offset
 alpha = 48
@@ -15,38 +15,33 @@ output_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
 name = 'Rayleigh'
 
 def main():
-    
+    S12 = loadData()
+    # print(S12.keys())
 
-    # Angle_column, setField_column, Field_column, S12_column = loadData(input_filepath)
-    Angles, setFields, Fields, S12 = loadData()
+    average_s12 = averageS12(S12)
 
-    unique_angles = np.unique(Angles)
-    unique_fields = np.unique(Fields)
+    DeltaS12 = deltaS12(S12, average_s12)
 
-    average_s12 = averageS12(Angles, Fields, S12, unique_angles)
+    # PlotOneAngle(name, DeltaS12, angles=[0, 44, 88])
 
-    DeltaS12 = deltaS12(Angles, S12, average_s12, unique_angles)
+    # exportData(DeltaS12)
 
-    # DeltaS12 = -S12
-
-    Angles, Fields = updateColums(Angles, Fields)
-
-    # PlotOneAngle(name, Fields, Angles, DeltaS12, angles=[0, 44, 88])
-
-    new_data = np.column_stack((Fields, Angles, DeltaS12))
-
-    # exportData(new_data)
-
-    ResFields = resonanceFields(new_data, save=True)
+    # ResFields = resonanceFields(DeltaS12, abs=False, save=False)
 
     # calcOffset(ResFields)
+
+    # ResS21 = resonanceS21(DeltaS12, ResFields, save=False)    
+
+    # calcRes21(ResS21)
+
+
     
-    # X, Y, Z = CreateMatrix(Fields, Angles, DeltaS12)
-    # Z = FillMatrix(Z)
+    X, Y, Z = CreateMatrix(DeltaS12)
+    Z = FillMatrix(Z)
 
     # Z = MinMaxScaling(Z)
 
-    # cmPlot(Z, Fields, Angles, name=name, vmin=0, show=True, save=True)
+    cmPlot(Z, X, Y, name=name, vmin=0, show=True, save=False)
 
 
     # CheckMax(Fields, Angles, Z)
@@ -55,12 +50,82 @@ def main():
 
 
 
+    
+
+def calcRes21(ResS21_dict):
+    mygraph = Graph()
+    Angles = []
+    ResS21 = []
+    angle_sums = defaultdict(float)
+    angle_counts = defaultdict(int)
+    for (field, angle), value in ResS21_dict.items():
+        if field < 0:
+            Angles.append(angle)
+            ResS21.append(value)
+            angle_sums[angle] += value
+            angle_counts[angle] += 1
+    angle_means = {angle: angle_sums[angle] / angle_counts[angle] for angle in angle_sums}
+    Angles = np.array(list(angle_means.keys()))
+    ResS21 = np.array(list(angle_means.values()))
+    # print(ResS21)
+    # initial_guess = [15, 1, 50, 25]
+    # params, covariance = curve_fit(cosFunc, Angles, ResS21, p0=initial_guess)
+    # a, b, c, d = params
+    # resS21 = cosFunc(Angles, a, b, c, d)
+    
+    # print(f'alpha = {c}')
+
+    mygraph.add_scatter(Angles, ResS21)
+    # mygraph.add_plot(Angles, resS21)
+    
+    mygraph.plot_Graph()
+
+
+def resonanceS21(DeltaS12_dict, ResFields, save=False):
+    ResS21 = {}
+    kth = 1
+    for angle, fieldx in ResFields.items():
+        fields = [field for ((field, angle_in_dict), value) in DeltaS12_dict.items() if angle == angle_in_dict]
+        field_index = fields.index(fieldx)
+        for i in range((field_index - kth), (field_index + kth + 1)):
+            field = fields[i]
+            ResS21[(field, angle)] = DeltaS12_dict[(field, angle)]
+
+        # handle opposite resfields
+        closest_field = None
+        min_diff = float('inf')
+        for field in fields:
+            diff = abs(field + fieldx)
+            if diff < min_diff:
+                min_diff = diff
+                closest_field = field
+        field_index = fields.index(closest_field)
+        for i in range((field_index - kth), (field_index + kth + 1)):
+            field = fields[i]
+            ResS21[(field, angle)] = DeltaS12_dict[(field, angle)]
+        
+
+    if save: 
+        header = np.array(["Field in mT", "Angle in °", "ResDelta S_12"])
+        output_filepath = os.path.join(output_folder, f'ResS21_{name}.txt')
+        dtype = [('field', float), ('angle', float), ('deltaS12', float)]
+        ResS21_array = np.array([(field, angle, deltaS12) for (field, angle), deltaS12 in ResS21.items()], dtype=dtype)
+        deltaS12_column = ResS21_array['deltaS12']
+        scaled_deltaS12_column = MinMaxScaling(deltaS12_column)
+        ResS21_array['deltaS12'] = scaled_deltaS12_column
+        np.savetxt(output_filepath, ResS21_array, header='\t'.join(header), comments='', delimiter='\t', fmt='%.6e')
+    
+    return ResS21
 
 
 def calcOffset(ResFields):
     mygraph = Graph()
     Angles = np.array(list(ResFields.keys()))
     Fields = np.array(list(ResFields.values()))
+    # Sort the angles and fields
+    sorted_indices = np.argsort(Angles)
+    Angles = Angles[sorted_indices]
+    Fields = Fields[sorted_indices]
 
     initial_guess = [15, 1, 50, 25]
     params, covariance = curve_fit(cosFunc, Angles, Fields, p0=initial_guess)
@@ -69,8 +134,8 @@ def calcOffset(ResFields):
     
     print(f'alpha = {c}')
 
-    mygraph.add_scatter(ResFields.keys(), ResFields.values())
-    mygraph.add_plot(ResFields.keys(), fields)
+    mygraph.add_scatter(Angles, Fields)
+    mygraph.add_plot(Angles, fields)
     
     mygraph.plot_Graph()
 
@@ -79,9 +144,7 @@ def cosFunc(x, a, b, c, d):
     return a*np.cos(b * np.deg2rad(x-c))+d
 
 
-
-
-def PlotOneAngle(name, Fields, Angles, DeltaS12, angles=[0]):
+def PlotOneAngle(name, DeltaS12_dict, angles=[0]):
     mygraph = Graph()
     colors = get_plot_colors(len(angles))
     if name == 'Rayleigh': x0=34.23
@@ -89,52 +152,81 @@ def PlotOneAngle(name, Fields, Angles, DeltaS12, angles=[0]):
     mygraph.add_vline(x=x0, color='yellow')
     mygraph.add_vline(x=-x0, color='yellow')
     for i, angle in enumerate(angles):
-        mask = Angles == angle
-        fields = Fields[mask]
-        deltaS12 = DeltaS12[mask]
         color = colors[i]
-        mygraph.add_plot(fields, deltaS12, label=f'{angle}°', color=color)
+        field_list = []
+        deltaS12_list = []
+        for (field, angle_in_dict), deltaS12 in DeltaS12_dict.items():
+            if angle == angle_in_dict:
+                field_list.append(field)
+                deltaS12_list.append(deltaS12)
+                
+        mygraph.add_plot(field_list, deltaS12_list, label=f'{angle}°', color=color)
     mygraph.plot_Graph(save=False, legend=True, xlabel='$\mu_0 H$ in mT', ylabel='$\Delta S12$ in dB', name=f'singleAngle_{name}')
-
-
 
 
 def loadData():
     # Define file paths
-    if name == 'Rayleigh': filename = 'TimeGated2.45.txt'
-    elif name == 'Sezawa': filename = 'TimeGated3.53.txt'
-    else: print('no file for this name')
+    filename = 'TimeGated2.45.txt' if name == 'Rayleigh' else 'TimeGated3.53.txt' if name == 'Sezawa' else None
+    if filename is None:
+        print('no file for this name')
+        return
+
     filepath = os.path.join(input_folder, filename)
 
     # Read the data from the .txt file
     data = np.loadtxt(filepath, dtype=float, skiprows=1)
 
-    # Extract the angles
+    # Filter the data
     Angle_column = data[:, 0]
     data = data[(Angle_column > -90) & (Angle_column <= 90)]
-
-    # Extract the fields
     setField_column = data[:, 1]
-    if name == 'Rayleigh': maxfield = 45e-3
-    elif name == 'Sezawa': maxfield = 80e-3
-    else: print('no fieldborder for this name')
+    maxfield = 45e-3 if name == 'Rayleigh' else 80e-3 if name == 'Sezawa' else None
+    if maxfield is None:
+        print('no fieldborder for this name')
+        return
     data = data[(setField_column >= -maxfield) & (setField_column <= maxfield)]
 
-    #Extract columns
-    setField_column = data[:, 1]
-    Angle_column = data[:, 0]
-    Field_column = 1000 * (data[:, 2] + data[:, 3]) / 2
+    # Extract and update columns
+    Angle_column, Field_column = updateColums(data[:, 0], 1000 * (data[:, 2] + data[:, 3]) / 2)
     S12_column = data[:, 5]
-    real_column = data[:, 7]
-    imag_column = data[:, 8]
 
-    return Angle_column, setField_column, Field_column, S12_column
+    #  # Get the sorted indices of the angles
+    # sorted_indices = np.argsort(Angle_column)
+
+    # # Sort the angles, fields and S12_column
+    # Angle_column = Angle_column[sorted_indices]
+    # Field_column = Field_column[sorted_indices]
+    # S12_column = S12_column[sorted_indices]
 
 
-def averageS12(Angle_column, Field_column, S12_column, unique_angles):
-    # Calculate average S_12 of 3 min/max field elemnts for each angle
+    S12 = {}
+    for i, row in enumerate(S12_column):
+        angle = Angle_column[i]
+        field = Field_column[i]
+        S12[(field, angle)] = row
+
+    return S12
+
+
+def averageS12(S21_dict):
+    # Extract Angle_column, Field_column, and S12_column from S21_dict
+    Angle_column = []
+    Field_column = []
+    S12_column = []
+    for (field, angle), s12 in S21_dict.items():
+        Field_column.append(field)
+        Angle_column.append(angle)
+        S12_column.append(s12)
+
+    # Convert lists to numpy arrays
+    Angle_column = np.array(Angle_column)
+    Field_column = np.array(Field_column)
+    S12_column = np.array(S12_column)
+
+    # Calculate average S_12 of 3 min/max field elements for each angle
     kth = 3
     average_s12 = {}
+    unique_angles = np.unique(Angle_column)
     for angle in unique_angles: 
         mask = Angle_column == angle
         smallest_fields = np.partition(Field_column[mask], kth-1)[:kth]
@@ -147,27 +239,15 @@ def averageS12(Angle_column, Field_column, S12_column, unique_angles):
 
     return average_s12
 
-'''
-def getMaxs():
-    # Retrieve the corresponding setField and Field values
-    max_setField = setField_column[max_s12_index]
-    max_Field = Field_column[max_s12_index]
-    max_S12 = S12_column[max_s12_index]
-    max_angle = Angle_column[max_s12_index]
-    print(f"Max S12: {max_S12}, SetField: {max_setField}, Field: {-max_Field}, Angle: {max_angle-alpha}")
-'''
 
-def deltaS12(Angles, S12, average_s12, unique_angles):
-    # Calculate the Delta S_12 column
-    deltaS12_column = np.zeros_like(S12)
-    for angle in unique_angles:
-        mask = Angles == angle
-        delta_S12 = S12[mask] - average_s12[angle]
-        # Handle invalid or missing values (e.g., NaN)
-        delta_S12[np.isnan(delta_S12)] = 0  # Replace NaN with 0 or another suitable value
-        deltaS12_column[mask] = delta_S12
+def deltaS12(S21_dict, average_s12):
+    deltaS12_dict = {}
+    for (field, angle), s12 in S21_dict.items():
+        delta_S12 = s12 - average_s12[angle]
+        deltaS12_dict[(field, angle)] = -delta_S12
 
-    return -deltaS12_column
+    return deltaS12_dict
+
 
 def updateColums(Angles, Fields):
     # Find the indices of rows where the "Angle_column" is within the specified range
@@ -181,22 +261,30 @@ def updateColums(Angles, Fields):
     
     return Angles, Fields
 
-def exportData(new_data):
+
+def exportData(DeltaS12_dict):
+    # Convert the DeltaS12_dict to a 2D array
+    new_data = []
+    for (field, angle), deltaS12 in DeltaS12_dict.items():
+        new_data.append([field, angle, deltaS12])
+    new_data = np.array(new_data)
+
     # Create a new data matrix with the updated columns
     header = np.array(["Field in mT", "Angle in °", "Delta S_12"])
     output_filepath = os.path.join(output_folder, f'PostTG_{name}.txt')
     np.savetxt(output_filepath, new_data, header='\t'.join(header), comments='', delimiter='\t', fmt='%.6e')
 
 
-def resonanceFields(new_data, save=False):
+def resonanceFields(DeltaS12_dict, abs=False, save=False):
     # Get resonance fields
-    unique_angles = np.unique(new_data[:, 1])
     max_fields = {}
-    for angle in unique_angles:
-        angle_data = new_data[new_data[:,1] == angle]
-        max_index = np.argmax(angle_data[:, 2])
-        max_field = np.abs(angle_data[max_index, 0])
-        max_fields[angle] = max_field
+    for (field, angle), deltaS12 in DeltaS12_dict.items():
+        if angle not in max_fields or deltaS12 > max_fields[angle][1]:
+            max_fields[angle] = (field, deltaS12)
+
+    # Extract the field with maximum deltaS12 for each angle
+    if abs: max_fields = {angle: np.abs(field) for angle, (field, deltaS12) in max_fields.items()}
+    else: max_fields = {angle: field for angle, (field, deltaS12) in max_fields.items()}
 
     if save: 
         header = np.array(["Angle in °", "Field in mT"])
@@ -207,28 +295,25 @@ def resonanceFields(new_data, save=False):
     
     return max_fields
 
-def CreateMatrix(Fields, Angles, DeltaS12):
-    unique_fields = np.unique(Fields)
-    unique_angles = np.unique(Angles)
+
+def CreateMatrix(S12_dict):
+    unique_fields = np.array(sorted(set(field for (field, angle) in S12_dict.keys())))
+    unique_angles = np.array(sorted(set(angle for (field, angle) in S12_dict.keys())))
+
     # Create X and Y grids using numpy.meshgrid
     X, Y = np.meshgrid(unique_fields, unique_angles)
 
     # Initialize Z with None values to indicate empty fields
     Z = np.empty_like(X)
+    # Z[:] = np.nan
 
-    # Create index maps for angles and fields
-    angle_index_map = {angle: index for index, angle in enumerate(unique_angles)}
-    field_index_map = {field: index for index, field in enumerate(unique_fields)}
+    for (field, angle), s12 in S12_dict.items():
+        field_index = np.where(unique_fields == field)[0][0]
+        angle_index = np.where(unique_angles == angle)[0][0]
+        Z[angle_index, field_index] = s12
 
-    # Fill the Z-values with corresponding deltaS12 values using advanced indexing
-    for angle, field, deltaS12 in zip(Angles, Fields, DeltaS12):
-        angle_index = angle_index_map.get(angle)
-        field_index = field_index_map.get(field)
-        if angle_index is not None and field_index is not None:
-            Z[angle_index, field_index] = deltaS12
-    X = np.matrix(X)
-    Y = np.matrix(Y)
     return X, Y, Z
+
 
 def FillMatrix(Z):
     # Fill empty cells of Z

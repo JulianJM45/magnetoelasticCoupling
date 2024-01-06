@@ -105,7 +105,7 @@ def MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_
 
 def loadData():
     # Define file paths
-    if name == 'Rayleigh': filename = 'PostTG_Rayleigh.txt'
+    if name == 'Rayleigh': filename = 'ResS21_Rayleigh.txt'
     elif name == 'Sezawa': filename = 'PostTG_Sezawa.txt'
     else: print('no file for this name')
     filepath = os.path.join(input_folder, filename)

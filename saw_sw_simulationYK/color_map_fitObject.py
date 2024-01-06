@@ -16,6 +16,8 @@ P_absDict = {}
 
 def InitialGuess():
     alpha = 0.008
+    b1 = 4.37
+    b2 = 8.75
     eps = {
             'xx': 0.39-0.69j,
             'xy': 0,
@@ -23,7 +25,7 @@ def InitialGuess():
             'yz': -0.02-0.02j
         }
     eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = SplitEps(eps)
-    return alpha, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi
+    return alpha, b1, b2, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi
 
 def main():
     Angles, Fields, params = GetParams()
@@ -37,30 +39,23 @@ def main():
     # Z = FillMatrix(Z)
     # cmPlot(Z, Fields, Angles)
     
+    prepareObjects(Fields, Angles, P_abs, params_)
     
-    for i, field in enumerate(Fields):
-        angle = Angles[i]
-        P_absDict[field, angle] = P_abs[i]
-        mySWdirectory[field, angle] = SWcalculatorSingle(field, angle, params_)
-        mySWdirectory[field, angle].calcPhi0()
-        mySWdirectory[field, angle].calcChi()
-
+    
     
     fitparams, covariance = curve_fit(CalculationSweep, mySWdirectory.keys(), P_abs, p0=initial_guess)
 
-    alpha, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = fitparams
+    alpha, b1, b2, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = fitparams
     eps = MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi)
 
     print("Alpha:", alpha)
+    print("b1:", b1)    
+    print("b2:", b2)
     print("Eps_xx:", eps['xx'])
     print("Eps_xy:", eps['xy'])
     print("Eps_xz:", eps['xz'])
     print("Eps_yz:", eps['yz'])
     
-    
-
-
-
 
 
 
@@ -78,30 +73,35 @@ def main():
 #     return scaled_P_abs
 
 def CalculationSweep(keys, *fitparams):
-    alpha, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = fitparams
+    alpha, b1, b2, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = fitparams
     eps = MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi)
     eps['yy'] = 0
     eps['zz'] = 0
     eps = eps['xx'], eps['yy'], eps['yy'], eps['xy'], eps['xz'], eps['yz']
     # params = alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps   
 
-    with Pool() as p:
-        p.map(calculateP_abs, [(field, angle, eps) for (field, angle) in mySWdirectory.keys()])
+    # with Pool() as p:
+    #     p.map(mySWdirectory[field, angle].calcH_dr(eps), [(field, angle, eps) for (field, angle) in mySWdirectory.keys()])
 
-    with Pool() as p:
-        p.map(mySWdirectory[field, angle].calcH_dr(), [(field, angle, eps) for (field, angle) in mySWdirectory.keys()])
+    # with Pool() as p:
+    #     for field, angle in mySWdirectory.keys():
+    #         p.map(mySWdirectory[field, angle].calcH_dr(eps), [(field, angle, eps)])
+
+    for field, angle in mySWdirectory.keys():
+            mySWdirectory[field, angle].calcH_dr(b1, b2, eps)
+            mySWdirectory[field, angle].calcP_abs()
     
     P_absFittet = {}
     scaled_P_abs = {}
 
     for (field, angle) in mySWdirectory.keys():
-        P_absFittet[field, anlge] = mySWdirectory[field, anlge].P_abs
+        P_absFittet[field, angle] = mySWdirectory[field, angle].P_abs
 
     max_value = max(P_absFittet.values())
     min_value = min(P_absFittet.values())
 
     for (field, angle) in P_absFittet.keys():
-        scaled_P_abs[field, anlge] = (P_absFittet[field, angle] - min_value) / (max_value - min_value)
+        scaled_P_abs[field, angle] = (P_absFittet[field, angle] - min_value) / (max_value - min_value)
 
     scaled_P_absArray = np.array(list(scaled_P_abs.values()))
     # P_abs = np.array(P_abs)
@@ -109,6 +109,17 @@ def CalculationSweep(keys, *fitparams):
     # scaled_P_abs = (P_abs - np.min(P_abs)) / (np.max(P_abs) - np.min(P_abs))
 
     return scaled_P_absArray
+
+
+
+
+def prepareObjects(Fields, Angles, P_abs, params_):
+    for i, field in enumerate(Fields):
+        angle = Angles[i]
+        P_absDict[field, angle] = P_abs[i]
+        mySWdirectory[field, angle] = SWcalculatorSingle(field, angle, params_)
+        mySWdirectory[field, angle].calcPhi0()
+        mySWdirectory[field, angle].calcChi()
 
 
 def calculateP_abs(args):
@@ -146,7 +157,7 @@ def MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_
 
 def loadData():
     # Define file paths
-    if name == 'Rayleigh': filename = 'PostTG_Rayleigh.txt'
+    if name == 'Rayleigh': filename = 'ResS21_Rayleigh.txt'
     elif name == 'Sezawa': filename = 'PostTG_Sezawa.txt'
     else: print('no file for this name')
     filepath = os.path.join(input_folder, filename)
