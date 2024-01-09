@@ -5,11 +5,12 @@ import matplotlib.pyplot as plt
 import os
 
 # matplotlib.use('TkAgg')
-output_folder = '/home/julian/BA/pictures'
-# outputfolder = r'C:\Users\Julian\Pictures\BA'
+# output_folder = '/home/julian/BA/pictures'
+output_folder = r'C:\Users\Julian\Pictures\BA'
 
-def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', ylabel='$\phi$ in °', outputfolder=output_folder, show=True, save=False, savePDF=False, cmap='hot_r', width_cm = 16, height_cm = 9, equalBounds=False, vmin=None):
-    if isinstance(X, np.ndarray):
+def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', xlabel='$\mu_0H$\u2009(mT)', ylabel='$\phi$\u2009(°)', cbarlabel='$\Delta$$S_{12}$\u2009(dB)', outputfolder=output_folder, show=True, save=False, savePDF=False, cmap='hot_r', width_cm = 16, height_cm = None, equalBounds=False, vmin=None):
+    if not isinstance(X, np.matrix):
+        print('X is np.ndarray')
         unique_angles = np.unique(Y)
         unique_fields = np.unique(X)
         # Create X and Y grids using numpy.meshgrid
@@ -17,6 +18,8 @@ def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', ylabel='$\phi$ in °', outp
     # Set the desired figure size (width_cm, height_cm) in centimeters
     fontsize =11
 
+    if height_cm is None:
+        height_cm = width_cm * (9/16)
     # Convert centimeters to inches
     width_in = width_cm / 2.54
     height_in = height_cm / 2.54
@@ -49,8 +52,8 @@ def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', ylabel='$\phi$ in °', outp
     # Add labels and a title
     plt.rcParams['font.family'] = 'Arial'
     plt.rcParams['font.sans-serif'] = 'Arial'
-    cbar.ax.set_title('$\Delta$$S12$ in dB', fontsize=fontsize)
-    plt.xlabel('$\mu_0H$ in mT', fontsize=fontsize)
+    cbar.ax.set_title(cbarlabel, fontsize=fontsize)
+    plt.xlabel(xlabel, fontsize=fontsize)
     plt.ylabel(ylabel, fontsize=fontsize)
     # plt.title('Colormap of $\Delta$$S_{12}$ '+f'for {name} mode', fontsize=fontsize)
     plt.xticks(fontsize=fontsize)  

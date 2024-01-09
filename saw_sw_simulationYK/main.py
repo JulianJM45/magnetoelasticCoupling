@@ -41,7 +41,7 @@ elapsed_time = time.time() - start_time
 print (f'elapsed time:  {elapsed_time} s')
 
 
-cmPlot(P_abs, Fields, Angles, name=f'{name}_Fit1', save=True)
+cmPlot(P_abs, Fields, Angles, name=f'{name}_Fit1', save=False)
 
 
 

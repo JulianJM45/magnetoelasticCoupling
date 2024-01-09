@@ -3,8 +3,8 @@ from my_modules import *
 import numpy as np
 from scipy.optimize import curve_fit
 
-# importfolder = r'C:\Users\Julian\Documents\BA\FMR#3'
-importfolder = '/home/julian/BA/dataForPython/FMR#3/H_resFields'
+importfolder = r'C:\Users\Julian\Documents\BA\FMR#3'
+# importfolder = '/home/julian/BA/dataForPython/FMR#3/H_resFields'
 output_folder = '/home/julian/BA/pictures'
 
 alpha = 0
@@ -21,10 +21,10 @@ def main():
 
     Hani2 = Hani - fit1Hani
 
-    # fit2Hani = Fit2(Angles, Hani2)
+    fit2Hani = Fit2(Angles, Hani2)
 
 
-    # Hani3 = Hani2 -fit2Hani
+    Hani3 = Hani2 -fit2Hani
     # fit3Hani = Fit3(Angles, Hani3)
 
     # Hani4 = Hani3 - fit3Hani
@@ -33,8 +33,8 @@ def main():
     # Hani5 = Hani4 - fit4Hani
 
     
-    # Checkplot(Angles, Hani, fit1Hani)
-    GraphPlot(Angles, Hani2, save=True, name='Hani_sixfold', xlabel='Angle in °', ylabel='$\~{H}_\mathrm{ani}$ in mT')
+    Checkplot(Angles, Hani2, fit2Hani)
+    # GraphPlot(Angles, Hani3, save=False, name='Hani_sixfold', xlabel='Angle in °', ylabel='$\~{H}_\mathrm{ani}$ in mT')
 
 
 def Fit4(Angles, Hani4):
@@ -57,13 +57,14 @@ def Fit3(Angles, Hani3):
 
 
 def Fit2(Angles, Hani2):
-    initial_guess = [1, 1]
-    params, covariance = curve_fit(SixfoldFit, Angles, Hani2, p0=initial_guess)
-    k1, k2 = params
+    initial_guess = [1, 1, 0]
+    params, covariance = curve_fit(SixfoldCalc, Angles, Hani2, p0=initial_guess)
+    k1, k2, phi0 = params
     print(f'k1: {k1}')
     print(f'k2: {k2}')
+    print(f'phi0: {phi0}')
 
-    fit2Hani = SixfoldFit(Angles, k1, k2)
+    fit2Hani = SixfoldCalc(Angles, k1, k2, phi0)
 
     return fit2Hani
     
@@ -123,10 +124,12 @@ def CosinusCalc(angle, a, b, c, d):
 def CosinusAndLinearCalc(angle, a, b, c, d, m):
     return (a*(np.cos(b*(np.deg2rad(angle) - np.deg2rad(c))))**2+d + m*angle)
 
-def SixfoldCalc(angle, k1, k2):
-    term1 = k1/12 *(7 - 8 + 4)
-    term2 = k2/108 * (-24 + 45 - 24 + 4 + np.cos(6 * np.deg2rad(angle)))
-    return (term1 + term2)
+def SixfoldCalc(angle, k1, k2, phi0=0):
+    # term1 = k1/12 *(7 - 8 + 4)
+    # term2 = k2/108 * (-24 + 45 - 24 + 4 + np.cos(6 * np.deg2rad(angle)))
+    term = k1 + k2 * np.cos(6 * np.deg2rad(angle-phi0))
+    # return (term1 + term2)
+    return term
 
 def GetData(filename):
     input_filepath = os.path.join(importfolder, filename)
@@ -141,7 +144,7 @@ def Checkplot(Angles, Hani, Fit, save=False, name=''):
     mygraph = Graph()
     mygraph.add_plot(Angles, Fit*1e3, color='r', label='$cos²$ + linear Fit')
     mygraph.add_scatter(Angles, Hani*1e3, label='Messdaten')
-    mygraph.plot_Graph(safe=True, legend=True, name='Hani_fit', xlabel='Angle in °', ylabel='$H_\mathrm{ani}$ in mT')
+    mygraph.plot_Graph(save=save, legend=True, name='Hani_fit', xlabel='Angle in °', ylabel='$H_\mathrm{ani}$ in mT')
 
 
 

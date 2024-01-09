@@ -7,10 +7,10 @@ from collections import defaultdict
 # Define the angle offset
 alpha = 48
 # alpha = 0
-
-input_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
-# output_folder = r'C:\Users\Julian\Documents\BA\Field_and_Angle_Sweep#3
-output_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
+input_folder = r'C:\Users\Julian\Documents\dataForPython\Field_Angle_Sweep#3'
+# input_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
+output_folder = r'C:\Users\Julian\Documents\dataForPython\Field_Angle_Sweep#3'
+# output_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
 
 name = 'Rayleigh'
 

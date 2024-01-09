@@ -3,13 +3,15 @@ import numpy as np
 import os
 
 output_folder = '/home/julian/BA/pictures'
-# outputfolder=r'C:\Users\Julian\Pictures\BA'
+output_folder=r'C:\Users\Julian\Pictures\BA'
 
-def GraphPlot(x, y, xlabel='', ylabel='', name='Test1', title=None, outputfolder=output_folder, scatter=True, s=1, show=True, save=False, width_cm = 16, height_cm = 9, color='blue'):
-    fontsize =11
+def GraphPlot(x, y, xlabel='', ylabel='', name='Test1', title=None, outputfolder=output_folder, scatter=True, s=1, show=True, save=False, width_cm = 16, height_cm = None, color='blue', ymin=None, ymax=None,  xmin=None, xmax=None):
+    fontsize = 11
 
     # Convert centimeters to inches
     width_in = width_cm / 2.54
+    if height_cm is None:
+        height_cm = width_cm * (9/16)
     height_in = height_cm / 2.54
 
     # Create the figure with the specified size
@@ -24,11 +26,19 @@ def GraphPlot(x, y, xlabel='', ylabel='', name='Test1', title=None, outputfolder
     plt.yticks(fontsize=fontsize)
     plt.tick_params(axis='both', direction='in', top = True, right = True, width=1, length=4)
 
+    if xmin is not None and xmax is not None:    
+        plt.xlim([xmin, xmax])
+    
+    if ymin is not None and ymax is not None:
+        plt.ylim([ymin, ymax])
+
+    
+
     # Add a legend
     # plt.legend()
 
     if scatter: plt.scatter(x, y, label=name, marker='x', s=s, color=color)
-    else: plt.plot(x, y, label='sin(x)')
+    else: plt.plot(x, y, label=name, color=color)
 
         # Save the plot as an image file (e.g., PNG)
     if save: 
@@ -48,10 +58,11 @@ def get_plot_colors(num_colors):
 
 
 class Graph:
-    def __init__(self, width_cm=16, height_cm=9):
+    def __init__(self, width_cm=16, height_cm=None):
         self.width_cm = width_cm
-        self.height_cm = height_cm
-        
+        if height_cm is None:
+            self.height_cm = width_cm * (9/16)
+        else: self.height_cm = height_cm
 
         # Convert centimeters to inches
         width_in = self.width_cm / 2.54
@@ -69,7 +80,7 @@ class Graph:
     def add_vline(self, x, label='', linestyle='--', color='red'):
         plt.axvline(x=x, color=color, linestyle=linestyle, linewidth=2, label=label)
 
-    def plot_Graph(self, show=True, save=False, legend=False, name='Test1', xlabel='', ylabel='', outputfolder=output_folder):
+    def plot_Graph(self, show=True, save=False, legend=False, name='Test1', xlabel='', ylabel='', ymin=None, ymax=None,  xmin=None, xmax=None, outputfolder=output_folder):
         fontsize = 11
 
         plt.rcParams['font.family'] = 'sans-serif'
@@ -79,6 +90,13 @@ class Graph:
         plt.xticks(fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         plt.tick_params(axis='both', direction='in', top=True, right=True, width=1, length=4)
+
+        if xmin is not None and xmax is not None:    
+            plt.xlim([xmin, xmax])
+        
+        if ymin is not None and ymax is not None:
+            plt.ylim([ymin, ymax])
+
 
         if legend: plt.legend()
 
