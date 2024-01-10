@@ -3,7 +3,8 @@ import os
 from my_modules import *
 from saw_simul_functions import *
 from scipy.optimize import curve_fit
-from multiprocessing import Pool
+# from multiprocessing import Pool
+from sklearn.metrics import r2_score
 
 input_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
 
@@ -57,20 +58,15 @@ def main():
     print("Eps_yz:", eps['yz'])
     
 
+    
 
 
+def calcR2():
+    
 
-# def CalculationSweep(x, *fitparams):
-#     alpha, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = fitparams
-#     eps = MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi)
-#     eps['yy'] = 0
-#     eps['zz'] = 0
-#     params = alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps['xx'], eps['yy'], eps['yy'], eps['xy'], eps['xz'], eps['yz'] 
-#     P_abs =  np.array([singleCalculate(field, angle, params) for (field, angle) in x])
+    r2 = r2_score(P_abs, scaled_P_absArray)
+    return r2
 
-#     scaled_P_abs = (P_abs - np.min(P_abs)) / (np.max(P_abs) - np.min(P_abs))
-
-#     return scaled_P_abs
 
 def CalculationSweep(keys, *fitparams):
     alpha, b1, b2, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = fitparams
