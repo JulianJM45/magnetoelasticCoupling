@@ -3,24 +3,28 @@ from my_modules import *
 from nptdms import TdmsFile
 import numpy as np
 from scipy.optimize import curve_fit
+import platform
+
+if platform.system() == 'Linux': input_folder = '/home/julian/Seafile/BAJulian/dataForPython/S11#3'
+elif platform.system() == 'Windows': input_folder=r'C:\Users\Julian\Seafile\BAJulian\dataForPython\S11#3'
 
 
-# Define the path to your input TDMS file
-input_folder = r'C:\Users\Julian\Documents\BA\S11#3'
-# input_folder = '/home/julian/BA/dataForPython/S11#3'
 
-name = 'Rayleigh'
+name = 'Sezawa'
 
 
 def main():
-    mygraph = Graph(width_cm=8)
+    mygraph = Graph(width_cm=2.3, height_cm=1.72)
     # Fields, S11 = GetData(name)
 
     meanS11 = GetData()
 
     meanS11 = sliceData(meanS11, name)
-    S11fitted = FitLinear(meanS11)
+
     
+
+
+    S11fitted = FitLinear(meanS11)
     subtracted_values = {k: (meanS11[k] - S11fitted[k]) * 1e3 for k in meanS11.keys()}
 
     mygraph.add_scatter(subtracted_values.keys(), subtracted_values.values(), label='Messdaten')
@@ -32,7 +36,7 @@ def main():
 
 
 
-    mygraph.plot_Graph(save=True, legend=False, xlabel='$\mu_0H$\u2009(mT)', ylabel='$\Delta S_{11}$\u2009($k$dB)', name=f'S11_{name}', ymax =0.2, ymin=-0.5)
+    mygraph.plot_Graph(save=False, legend=False, xlabel='$\mu_0H$\u2009(mT)', ylabel='$\Delta S_{11}$\u2009(mdB) ', name=f'S11_{name}')
 
 
 
@@ -70,6 +74,8 @@ def GetData():
     Real = tdms_file['Read.ZNA']['S11_REAL'].data
     Imag = tdms_file['Read.ZNA']['S11_IMAG'].data
     S11 = Real ** 2 + Imag ** 2 
+    # Convert S11 to dB
+    S11 = 10 * np.log10(S11)
 
     # repFields = np.repeat(Fields, (len(S11)/len(Fields)))
     LEN = int(len(S11)/len(Fields))

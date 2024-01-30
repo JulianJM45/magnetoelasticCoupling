@@ -1,12 +1,11 @@
 import os
 import glob
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')))
 from my_modules import *
 import numpy as np
+import platform
 
-# importfolder = r'C:\Users\Julian\Documents\BA\Freq_Sweep#3'
-importfolder = '/home/julian/BA/dataForPython/Freq_Sweep#3'
+if platform.system() == 'Linux': input_folder = '/home/julian/Seafile/BAJulian/dataForPython/Freq_Sweep#3'
+elif platform.system() == 'Windows': input_folder=r'C:\Users\Julian\Seafile\BAJulian\dataForPython\Freq_Sweep#3'
 
 
 def main():
@@ -18,13 +17,22 @@ def main():
 
     graph = Graph()
 
+    # graph.add_vline(5, label='5')
+
+    simulFreqArray = [1.08, 5.5, 2.90, 3.68, 1.87, 4.72]
+
     for i, (number, (frequency, magnitude)) in enumerate(data_dict.items()):
         frequencies, magnitudes = GenerateArrayOne(number, frequency, magnitude)
         resFreq = round(GetResFreq(frequencies, magnitudes)*1e-9, 2)
         color = colors[i]
+        yheight = -150
+        if resFreq == 1.23 or resFreq==4.49: yheight = -155
         graph.add_scatter(frequencies*1e-9, magnitudes, label=f'{resFreq} GHz peak', color=color)
+        graph.add_vline(resFreq, y=yheight, color=color, label=f'{resFreq}\u2009GHz', linestyle='--')
+        
 
-    graph.plot_Graph(legend=True, safe=True, name='IDT-spectrum', xlabel='$f$ in GHz', ylabel='$S21$ in dB', outputfolder='/home/julian/BA/pictures')
+    graph.plot_Graph(legend=False, save=False, name='IDT-spectrum', xlabel='$f$\u2009(GHz)', ylabel='$S_{21}$\u2009(dB)')
+ 
 
 
 
@@ -70,8 +78,9 @@ def GenerateArrayOne(number, frequency, magnitude):
     
 def GetDataforfiles(file_pattern):
     data_dict = {}
-    pattern = os.path.join(importfolder, file_pattern)
+    pattern = os.path.join(input_folder, file_pattern)
     file_list = glob.glob(pattern)
+    file_list.sort()
     for file_path in file_list:
         number = extract_number_from_filename(file_path)
         data = np.loadtxt(file_path, dtype=float, skiprows=1)
@@ -90,16 +99,12 @@ def extract_number_from_filename(file_path):
 
 
 def GetData(filename):
-    input_filepath = os.path.join(importfolder, filename)
+    input_filepath = os.path.join(input_filepath, filename)
     data = np.loadtxt(input_filepath, dtype=float, skiprows=1)
     frequency = data[:, 0]
     magnitude = data[:, 1]
     return frequency, magnitude
 
-
-def get_plot_colors(num_colors):
-    colors = plt.cm.rainbow(np.linspace(0, 1, num_colors))
-    return colors
 
 
 

@@ -4,13 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-# matplotlib.use('TkAgg')
-# output_folder = '/home/julian/BA/pictures'
-output_folder = r'C:\Users\Julian\Pictures\BA'
+output_folder = '../picturesForBA'
 
-def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', xlabel='$\mu_0H$\u2009(mT)', ylabel='$\phi$\u2009(°)', cbarlabel='$\Delta$$S_{12}$\u2009(dB)', outputfolder=output_folder, show=True, save=False, savePDF=False, cmap='hot_r', width_cm = 16, height_cm = None, equalBounds=False, vmin=None):
-    if not isinstance(X, np.matrix):
-        print('X is np.ndarray')
+def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', xlabel='$\mu_0H_0$\u2009(mT)', ylabel='$\phi_H$\u2009(°)', cbarlabel='$\Delta$$S_{21}$\u2009(dB)', outputfolder=output_folder, show=True, save=False, saveSVG=False, cmap='hot_r', width_cm = 16.5, height_cm = None, equalBounds=False, vmin=None, vmax=None):
+    if X.ndim == 1:
+        print('X is no matrix')
         unique_angles = np.unique(Y)
         unique_fields = np.unique(X)
         # Create X and Y grids using numpy.meshgrid
@@ -27,14 +25,15 @@ def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', xlabel='$\mu_0H$\u2009(mT)'
     # Create the figure with the specified size
     fig = plt.figure(figsize=(width_in, height_in), dpi=300)
 
-    vmax=np.max(Z)
+    if vmax is None:
+        vmax=np.max(Z)
     if vmin is None:
         vmin=np.min(Z)
-
     if equalBounds:
         vmax_abs = np.max(np.abs(Z))
         vmin = -vmax_abs
         vmax = vmax_abs
+
     pcm = plt.pcolormesh(
         X, Y, Z,
         cmap=cmap,
@@ -50,8 +49,8 @@ def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', xlabel='$\mu_0H$\u2009(mT)'
     cbar = plt.colorbar(pcm)
     cbar.ax.tick_params(labelsize=fontsize)
     # Add labels and a title
-    plt.rcParams['font.family'] = 'Arial'
-    plt.rcParams['font.sans-serif'] = 'Arial'
+    plt.rcParams['font.family'] = 'sans-serif'
+    # plt.rcParams['font.sans-serif'] = 'Arial'
     cbar.ax.set_title(cbarlabel, fontsize=fontsize)
     plt.xlabel(xlabel, fontsize=fontsize)
     plt.ylabel(ylabel, fontsize=fontsize)
@@ -64,9 +63,10 @@ def cmPlot(Z, X, Y, ResFields=None, name='Rayleigh', xlabel='$\mu_0H$\u2009(mT)'
     if save: 
         output_filepath = os.path.join(outputfolder, f'ColorMap{name}.png')
         plt.savefig(output_filepath, dpi=300, bbox_inches='tight')
+        # plt.savefig(output_filepath, dpi=300)
 
-    if savePDF:
-        output_filepath = os.path.join(outputfolder, f'ColorMap{name}.pdf')
+    if saveSVG:
+        output_filepath = os.path.join(outputfolder, f'ColorMap{name}.svg')
         plt.savefig(output_filepath, dpi=300, bbox_inches='tight')
 
     # Show the final plot with all heatmaps

@@ -1,9 +1,6 @@
-import numpy as np
-from my_modules.graph_plot import GraphPlot 
+alpha1 =  0.013
+alpha2 =  0.0064
 
-x = np.linspace(0, 10, 100)
-y = np.sin(x)
+k = (alpha1-alpha2)/alpha1
 
-GraphPlot(x, y, name='Test1', xlabel='x (m), x\u2009(m)', ylabel='y', save=False, show=True)
-
-
+print(k)

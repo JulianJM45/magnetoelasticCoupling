@@ -5,32 +5,52 @@ from saw_simul_functions import *
 from scipy.optimize import curve_fit
 # from multiprocessing import Pool
 from sklearn.metrics import r2_score
+# import platform
+import numpy as np
+from collections import defaultdict
 
-input_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
 
 name = 'Rayleigh'
-# if name == 'Rayleigh': input_filepath = r'C:\Users\Julian\Documents\BA\Field_and_Angle_Sweep#3\M06\PostTG_Rayleigh.txt'
+name = 'Sezawa'
 
+
+input_folder = '../dataForPython/Field_Angle_Sweep#3'
 
 mySWdirectory = {}
 P_absDict = {}
 
 def InitialGuess():
-    alpha = 0.008
-    b1 = 4.37
-    b2 = 8.75
-    eps = {
-            'xx': 0.39-0.69j,
-            'xy': 0,
-            'xz': 1.00+0.56j,
-            'yz': -0.02-0.02j
+    # alpha = 0.005
+    alpha = 5.13e-3
+    # alpha = 0.01
+    b1 = 3.5
+    b2 = 7
+    if name == 'Rayleigh':
+        eps = {
+                'xx': 0.39-0.69j,
+                'xy': 0,
+                'xz': 1.00+0.56j,
+                'yz': -0.02-0.02j
+            }
+    elif name =='Sezawa':
+        eps = {
+            'xx': 0.25+0.02j,
+            'xy': 0.01+0j,
+            'xz': 0.09-1.00j,
+            'yz': 0.02+0.02j
         }
+    eps['xx'] =  (68.5599918997257+17.122278103400706j)
+    eps['xy'] =  (7.518160375585753-30.322126695128436j)
+    eps['xz'] =  (17.754438781091295-84.71784906405115j)
+    eps['yz'] =  (12.629232043550473+4.6202909648719j)
+
+
     eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = SplitEps(eps)
     return alpha, b1, b2, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi
 
 def main():
-    Angles, Fields, params = GetParams()
-    params_ = params[:12]
+    Angles, Fields, params = GetParams(name)
+    params_ = params[:10]
 
     Fields, Angles, P_abs = loadData()
 
@@ -40,7 +60,7 @@ def main():
     # Z = FillMatrix(Z)
     # cmPlot(Z, Fields, Angles)
     
-    prepareObjects(Fields, Angles, P_abs, params_)
+    prepareObjects(Fields, Angles, P_abs, params_, initial_guess)
     
     
     
@@ -49,23 +69,111 @@ def main():
     alpha, b1, b2, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = fitparams
     eps = MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi)
 
-    print("Alpha:", alpha)
-    print("b1:", b1)    
-    print("b2:", b2)
-    print("Eps_xx:", eps['xx'])
-    print("Eps_xy:", eps['xy'])
-    print("Eps_xz:", eps['xz'])
-    print("Eps_yz:", eps['yz'])
+    errors = np.sqrt(np.diag(covariance))
+    alpha_err, b1_err, b2_err, eps_xxr_err, eps_xxi_err, eps_xyr_err, eps_xyi_err, eps_xzr_err, eps_xzi_err, eps_yzr_err, eps_yzi_err = errors
+    eps_err = MergeEps(eps_xxr_err, eps_xxi_err, eps_xyr_err, eps_xyi_err, eps_xzr_err, eps_xzi_err, eps_yzr_err, eps_yzi_err)
+
+    print("alpha = ", alpha)
+    print("b1 = ", b1)    
+    print("b2 = ", b2)
+    print("eps['xx'] = ", eps['xx'])
+    print("eps['xy'] = ", eps['xy'])
+    print("eps['xz'] = ", eps['xz'])
+    print("eps['yz'] = ", eps['yz'])
+
+    print("alpha_err = ", alpha_err)
+    print("b1_err = ", b1_err)
+    print("b2_err = ", b2_err)
+    print("eps_err['xx'] = ", eps_err['xx'])
+    print("eps_err['xy'] = ", eps_err['xy'])
+    print("eps_err['xz'] = ", eps_err['xz'])
+    print("eps_err['yz'] = ", eps_err['yz'])
+
+
+    compare(Fields, Angles, P_abs, fitparams, name=name, sign='pos', save=False, show=True)
+    compare(Fields, Angles, P_abs, fitparams, name=name, sign='neg', save=False, show=True)
+    # CalculateR2(Fields, Angles, P_abs, fitparams)
     
-
     
+def CalculateR2(Fields, Angles, P_abs, fitparams):
+    alpha, b1, b2, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = fitparams
+    eps = MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi)
+    eps['yy'] = 0
+    eps['zz'] = 0
+    eps = eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz']
 
+    P_absFittet = {}
+    scaled_P_abs = {}
 
-def calcR2():
+    for i, field in enumerate(Fields):
+        angle = Angles[i]
+        P_absDict[field, angle] = P_abs[i]
+        mySWdirectory[field, angle].calcH_dr(b1, b2, eps)
+        mySWdirectory[field, angle].calcP_abs()
+        P_absFittet[field, angle] = mySWdirectory[field, angle].P_abs
+
+    max_value = max(P_absFittet.values())
+    min_value = min(P_absFittet.values())
+    for (field, angle) in P_absFittet.keys():
+        scaled_P_abs[field, angle] = (P_absFittet[field, angle] - min_value) / (max_value - min_value)
+    fitted_P_absArray = np.array(list(scaled_P_abs.values()))
+
+    r2 = r2_score(P_abs, fitted_P_absArray)
+    print('r2 = ', r2)
+
+def compare(Fields, Angles, P_abs, fitparams, name='Rayleigh', sign='pos', save=False, show=True):
+    alpha, b1, b2, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = fitparams
+    eps = MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi)
+    eps['yy'] = 0
+    eps['zz'] = 0
+    eps = eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz']
+
+    if sign=='pos': mask = np.array(Fields) > 0
+    elif sign=='neg': mask = np.array(Fields) < 0
+    Fields = np.array(Fields)[mask]
+    Angles = np.array(Angles)[mask]
+    P_abs = np.array(P_abs)[mask]
     
+    angle_means = defaultdict(float)
+    angle_counts = defaultdict(int)
+    for angle, p_abs in zip(Angles, P_abs):
+        angle_means[angle] += p_abs
+        angle_counts[angle] += 1
+    
+    for angle in angle_means:
+        angle_means[angle] /= angle_counts[angle]
+    
+    mygraph = Graph(width_cm=8.2)
+    mygraph.add_scatter(angle_means.keys(), angle_means.values())
 
-    r2 = r2_score(P_abs, scaled_P_absArray)
-    return r2
+    P_absFittet = {}
+    scaled_P_abs = {}
+
+    for i, field in enumerate(Fields):
+        angle = Angles[i]
+        P_absDict[field, angle] = P_abs[i]
+        mySWdirectory[field, angle].calcH_dr(b1, b2, eps)
+        mySWdirectory[field, angle].calcP_abs()
+        P_absFittet[field, angle] = mySWdirectory[field, angle].P_abs
+
+    max_value = max(P_absFittet.values())
+    min_value = min(P_absFittet.values())
+    for (field, angle) in P_absFittet.keys():
+        scaled_P_abs[field, angle] = (P_absFittet[field, angle] - min_value) / (max_value - min_value)
+    fitted_P_absArray = np.array(list(scaled_P_abs.values()))
+
+    angle_means = defaultdict(float)
+    angle_counts = defaultdict(int)
+    for angle, p_abs in sorted(zip(Angles, fitted_P_absArray)):
+        angle_means[angle] += p_abs
+        angle_counts[angle] += 1
+
+    for angle in angle_means:
+        angle_means[angle] /= angle_counts[angle]
+
+    mygraph.add_plot(sorted(angle_means.keys()), angle_means.values())
+
+    mygraph.plot_Graph()
 
 
 def CalculationSweep(keys, *fitparams):
@@ -73,19 +181,13 @@ def CalculationSweep(keys, *fitparams):
     eps = MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi)
     eps['yy'] = 0
     eps['zz'] = 0
-    eps = eps['xx'], eps['yy'], eps['yy'], eps['xy'], eps['xz'], eps['yz']
-    # params = alpha, AniType, mue0Hani, phiu, A, g, mue0Ms, b1, b2, t, k, f, eps   
+    eps = eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz']  
 
-    # with Pool() as p:
-    #     p.map(mySWdirectory[field, angle].calcH_dr(eps), [(field, angle, eps) for (field, angle) in mySWdirectory.keys()])
-
-    # with Pool() as p:
-    #     for field, angle in mySWdirectory.keys():
-    #         p.map(mySWdirectory[field, angle].calcH_dr(eps), [(field, angle, eps)])
 
     for field, angle in mySWdirectory.keys():
-            mySWdirectory[field, angle].calcH_dr(b1, b2, eps)
-            mySWdirectory[field, angle].calcP_abs()
+        mySWdirectory[field, angle].calcChi(alpha)           # only for fitting alpha
+        # mySWdirectory[field, angle].calcH_dr(b1=3.5, b2=7, eps=eps)
+        mySWdirectory[field, angle].calcP_abs()
     
     P_absFittet = {}
     scaled_P_abs = {}
@@ -109,13 +211,20 @@ def CalculationSweep(keys, *fitparams):
 
 
 
-def prepareObjects(Fields, Angles, P_abs, params_):
+def prepareObjects(Fields, Angles, P_abs, params_, initial_guess):
+    alpha, b1, b2, eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = initial_guess
+    eps = MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi)
+    eps['yy'] = 0
+    eps['zz'] = 0
+    eps = eps['xx'], eps['yy'], eps['zz'], eps['xy'], eps['xz'], eps['yz'] 
+
     for i, field in enumerate(Fields):
         angle = Angles[i]
         P_absDict[field, angle] = P_abs[i]
         mySWdirectory[field, angle] = SWcalculatorSingle(field, angle, params_)
         mySWdirectory[field, angle].calcPhi0()
         mySWdirectory[field, angle].calcChi()
+        mySWdirectory[field, angle].calcH_dr(b1, b2, eps)
 
 
 def calculateP_abs(args):
@@ -154,7 +263,7 @@ def MergeEps(eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_
 def loadData():
     # Define file paths
     if name == 'Rayleigh': filename = 'ResS21_Rayleigh.txt'
-    elif name == 'Sezawa': filename = 'PostTG_Sezawa.txt'
+    elif name == 'Sezawa': filename = 'ResS21_Sezawa.txt'
     else: print('no file for this name')
     filepath = os.path.join(input_folder, filename)
     # Read the data from the .txt file
@@ -165,12 +274,12 @@ def loadData():
     Angles = data[:, 1]
     P_abs = data[:, 2]
 
-    Fields, Angles, P_abs, = SliceData(Fields, Angles, P_abs)
+    # Fields, Angles, P_abs, = SliceData(Fields, Angles, P_abs)
 
     # Apply MinMaxScaling
-    scaled_P_abs = (P_abs - np.min(P_abs)) / (np.max(P_abs) - np.min(P_abs))
+    # scaled_P_abs = (P_abs - np.min(P_abs)) / (np.max(P_abs) - np.min(P_abs))
 
-    return Fields, Angles, scaled_P_abs
+    return Fields, Angles, P_abs
 
 def SliceData(Fields, Angles, P_abs):
     if name == 'Rayleigh':

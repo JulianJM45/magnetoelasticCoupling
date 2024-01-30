@@ -3,9 +3,13 @@ from my_modules import *
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+# import platform
 
-# importfolder = r'C:\Users\Julian\Documents\BA\FMR#3'
-importfolder = '/home/julian/BA/dataForPython/FMR#3'
+# if platform.system() == 'Linux': input_folder = '/home/julian/BA/dataForPython/FMR#3'
+# elif platform.system() == 'Windows': input_folder = r'C:\Users\Julian\Seafile\BAJulian\dataForPython\FMR#3'
+
+input_folder = '../dataForPython/FMR#3'
+
 
 def main():
 
@@ -15,7 +19,15 @@ def main():
 
     X, Y, Z = CreateMatrix(Fields, Frequencies, S21)
 
-    cmPlot(Z, Fields, Frequencies, name='FMR', save=True, ylabel='$f$ in GHz', cmap='seismic', equalBounds=True)
+    Z = ScaleMatrix(Z)
+
+
+
+    mygraph = Graph(width_cm=12.2)
+    mygraph.add_cmPlot(Z, X, Y, cbarlabel='Re(d$S_{21}/$d$H$)\u2009(arb. u.)', cmap='seismic', equalBounds=True)
+    mygraph.plot_Graph(save=True, name='FMR', xlabel='$\mu_0H_0$\u2009(mT)', ylabel='$f$\u2009(GHz)', title='b)')
+
+    # cmPlot(Z, Fields, Frequencies, name='FMR', save=False, ylabel='$f$\u2009(GHz)', cbarlabel='d$S_{21}/$d$H$\u2009(dB)', cmap='seismic', equalBounds=True)
 
 
 
@@ -23,7 +35,7 @@ def main():
 def loadData():
     filename = 'DerivateDevideM05.dat'
 
-    importfilepath = os.path.join(importfolder, filename)
+    importfilepath = os.path.join(input_folder, filename)
 
     column_names = ['Field', 'Frequency', 'S21']
 
@@ -39,9 +51,12 @@ def loadData():
 
 def cutOneAngle(Fields, Frequencies, S21):
     LengthOneAngle = int(len(Fields)/9)
-    #update for first angle
-    Fields = Fields[:LengthOneAngle]*-1000
-    Frequencies = Frequencies[:LengthOneAngle]*1e-9
+    # #update for first angle (160°)
+    # Fields = Fields[:LengthOneAngle]*-1000
+    # Frequencies = Frequencies[:LengthOneAngle]*1e-9
+    #update for last angle (180°)
+    Fields = Fields[-LengthOneAngle:]*-1000
+    Frequencies = Frequencies[-LengthOneAngle:]*1e-9
     S21 = S21[:LengthOneAngle]
 
     return Fields, Frequencies, S21
@@ -69,6 +84,15 @@ def CreateMatrix(Fields, Angles, DeltaS12):
     X = np.matrix(X)
     Y = np.matrix(Y)
     return X, Y, Z
+
+def ScaleMatrix(Z):
+    Z = np.matrix(Z)
+    Z = Z/np.max(abs(Z))
+    return Z
+
+
+
+
 
 if __name__ == "__main__":
     # This block will be executed only if the script is run directly, not when imported as a module

@@ -4,15 +4,19 @@ import numpy as np
 from scipy.optimize import curve_fit
 from collections import defaultdict
 
+
+input_folder = '../dataForPython/Field_Angle_Sweep#3'
+output_folder = '../dataForPython/Field_Angle_Sweep#3'
+
 # Define the angle offset
 alpha = 48
 # alpha = 0
-input_folder = r'C:\Users\Julian\Documents\dataForPython\Field_Angle_Sweep#3'
-# input_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
-output_folder = r'C:\Users\Julian\Documents\dataForPython\Field_Angle_Sweep#3'
-# output_folder = '/home/julian/BA/dataForPython/Field_Angle_Sweep#3'
+
+
+
 
 name = 'Rayleigh'
+# name = 'Sezawa'
 
 def main():
     S12 = loadData()
@@ -21,27 +25,26 @@ def main():
     average_s12 = averageS12(S12)
 
     DeltaS12 = deltaS12(S12, average_s12)
-
-    # PlotOneAngle(name, DeltaS12, angles=[0, 44, 88])
-
+    
+    
     # exportData(DeltaS12)
 
-    # ResFields = resonanceFields(DeltaS12, abs=False, save=False)
+    PlotOneAngle(name, DeltaS12, angles=[0, 30, 42, 88], save=True)
 
-    # calcOffset(ResFields)
+    # ResFields = resonanceFields(DeltaS12, abs=False, save=False)     #abs=True for calcOffset, abs=False for resonanceS21
 
-    # ResS21 = resonanceS21(DeltaS12, ResFields, save=False)    
+    # # # calcOffset(ResFields)
 
-    # calcRes21(ResS21)
+    # ResS21 = resonanceS21(DeltaS12, ResFields, save=True)   
 
-
+    # calcRes21(ResS21, save=False, sign='pos', angles=[]) 
     
-    X, Y, Z = CreateMatrix(DeltaS12)
-    Z = FillMatrix(Z)
+    # X, Y, Z = CreateMatrix(DeltaS12)
+    # Z = FillMatrix(Z)
+    
+    # # Z = MinMaxScaling(Z)
 
-    # Z = MinMaxScaling(Z)
-
-    cmPlot(Z, X, Y, name=name, vmin=0, show=True, save=False)
+    # cmPlot(Z, X, Y, name=name, vmax=-0.08, cmap='hot', show=True, save=False)
 
 
     # CheckMax(Fields, Angles, Z)
@@ -50,41 +53,83 @@ def main():
 
 
 
-    
 
-def calcRes21(ResS21_dict):
-    mygraph = Graph()
+
+def calcRes21(ResS21_dict, save=False, sign='neg', angles=[0]):
     Angles = []
     ResS21 = []
     angle_sums = defaultdict(float)
     angle_counts = defaultdict(int)
     for (field, angle), value in ResS21_dict.items():
-        if field < 0:
+        if sign == 'pos' and field > 0:
             Angles.append(angle)
             ResS21.append(value)
             angle_sums[angle] += value
-            angle_counts[angle] += 1
+            angle_counts[angle] += 1 
+        elif sign == 'neg' and field < 0:
+            Angles.append(angle)
+            ResS21.append(value)
+            angle_sums[angle] += value
+            angle_counts[angle] += 1          
     angle_means = {angle: angle_sums[angle] / angle_counts[angle] for angle in angle_sums}
     Angles = np.array(list(angle_means.keys()))
     ResS21 = np.array(list(angle_means.values()))
-    # print(ResS21)
-    # initial_guess = [15, 1, 50, 25]
-    # params, covariance = curve_fit(cosFunc, Angles, ResS21, p0=initial_guess)
-    # a, b, c, d = params
-    # resS21 = cosFunc(Angles, a, b, c, d)
-    
-    # print(f'alpha = {c}')
 
-    mygraph.add_scatter(Angles, ResS21)
-    # mygraph.add_plot(Angles, resS21)
-    
-    mygraph.plot_Graph()
+    max_angle = Angles[np.argmax(ResS21)] #change for positive or negative deltaS12
+    print(f"The angle where ResS21 is maximal for {sign}Fiels: {max_angle}")
+    min_angle = Angles[np.argmin(ResS21)] #change for positive or negative deltaS12
+    print(f"The angle where ResS21 is minimal for {sign}Fiels: {min_angle}")
 
+    
+    mygraph = Graph(width_cm=8.2)
+    colors = get_plot_colors(len(angles))
+    mygraph.add_scatter(Angles, ResS21, s=4)
+    for i, angle in enumerate(angles):
+        color = colors[i]
+        mygraph.add_vline(x=angle, color=color, linewidth=1.3, label=f'{angle}°')
+        mygraph.add_vline(x=-angle, color=color, linewidth=1.3, label=f'{-angle}°')    
+    
+    if sign == 'pos': title=f'b) \t\t $\mu_0H_0>0$'
+    elif sign == 'neg': title=f'a) \t\t $\mu_0H_0<0$'
+    mygraph.plot_Graph(save=save, legend=False, title=title, xlabel='$\phi_H$\u2009(°)', ylabel='min $\Delta$$S_{21}$\u2009(dB)', name=f'ResS21_{sign}Fields{name}')
+    
 
 def resonanceS21(DeltaS12_dict, ResFields, save=False):
     ResS21 = {}
-    kth = 1
+    kth = 8
+
+
+    if name == 'Rayleigh': x0=34.23
+    if name == 'Sezawa': x0=62.82
+
+    # filter FMR resonance fields
+    for i in range(5):
+        closest_angle = None
+        min_diff = float('inf')
+        for angle, fieldx in ResFields.items():
+            diff = abs(fieldx - x0)
+            if diff < min_diff:
+                min_diff = diff
+                closest_field = fieldx
+                closest_angle = angle
+        # Delete the closest field from the dictionary
+        if closest_angle is not None:
+            del ResFields[closest_angle]
+        closest_angle = None
+        min_diff = float('inf')
+        for angle, fieldx in ResFields.items():
+            diff = abs(fieldx + x0)
+            if diff < min_diff:
+                min_diff = diff
+                closest_field = fieldx
+                closest_angle = angle
+        # Delete the closest field from the dictionary
+        if closest_angle is not None:
+            del ResFields[closest_angle]
+
+
     for angle, fieldx in ResFields.items():
+        # filter FMR resonance fields
         fields = [field for ((field, angle_in_dict), value) in DeltaS12_dict.items() if angle == angle_in_dict]
         field_index = fields.index(fieldx)
         for i in range((field_index - kth), (field_index + kth + 1)):
@@ -144,13 +189,13 @@ def cosFunc(x, a, b, c, d):
     return a*np.cos(b * np.deg2rad(x-c))+d
 
 
-def PlotOneAngle(name, DeltaS12_dict, angles=[0]):
+def PlotOneAngle(name, DeltaS12_dict, angles=[0], save=False):
     mygraph = Graph()
     colors = get_plot_colors(len(angles))
     if name == 'Rayleigh': x0=34.23
     if name == 'Sezawa': x0=62.82
-    mygraph.add_vline(x=x0, color='yellow')
-    mygraph.add_vline(x=-x0, color='yellow')
+    # mygraph.add_vline(x=x0, color='yellow')
+    # mygraph.add_vline(x=-x0, color='yellow')
     for i, angle in enumerate(angles):
         color = colors[i]
         field_list = []
@@ -160,8 +205,9 @@ def PlotOneAngle(name, DeltaS12_dict, angles=[0]):
                 field_list.append(field)
                 deltaS12_list.append(deltaS12)
                 
-        mygraph.add_plot(field_list, deltaS12_list, label=f'{angle}°', color=color)
-    mygraph.plot_Graph(save=False, legend=True, xlabel='$\mu_0 H$ in mT', ylabel='$\Delta S12$ in dB', name=f'singleAngle_{name}')
+        mygraph.add_plot(field_list, deltaS12_list, label=f'{angle}°', linewidth=0.1, color=color)
+        # mygraph.add_scatter(field_list, deltaS12_list, label=f'{angle}°', s=4, color=color)
+    mygraph.plot_Graph(save=save, legend=True, xlabel='$\mu_0H_0$\u2009(mT)', ylabel='$\Delta S_{21}$\u2009(dB)', name=f'singleAngle_{name}')
 
 
 def loadData():
@@ -180,11 +226,11 @@ def loadData():
     Angle_column = data[:, 0]
     data = data[(Angle_column > -90) & (Angle_column <= 90)]
     setField_column = data[:, 1]
-    maxfield = 45e-3 if name == 'Rayleigh' else 80e-3 if name == 'Sezawa' else None
-    if maxfield is None:
-        print('no fieldborder for this name')
-        return
-    data = data[(setField_column >= -maxfield) & (setField_column <= maxfield)]
+    # maxfield = 45e-3 if name == 'Rayleigh' else 80e-3 if name == 'Sezawa' else None
+    # if maxfield is None:
+    #     print('no fieldborder for this name')
+    #     return
+    # data = data[(setField_column >= -maxfield) & (setField_column <= maxfield)]
 
     # Extract and update columns
     Angle_column, Field_column = updateColums(data[:, 0], 1000 * (data[:, 2] + data[:, 3]) / 2)
@@ -244,7 +290,26 @@ def deltaS12(S21_dict, average_s12):
     deltaS12_dict = {}
     for (field, angle), s12 in S21_dict.items():
         delta_S12 = s12 - average_s12[angle]
-        deltaS12_dict[(field, angle)] = -delta_S12
+        # deltaS12_dict[(field, angle)] = -delta_S12
+        deltaS12_dict[(field, angle)] = delta_S12
+
+    # Field filtering
+    maxfield = 45 if name == 'Rayleigh' else 80 if name == 'Sezawa' else None
+    if maxfield is None:
+        print('no fieldborder for this name')
+    deltaS12_dict = {key: value for key, value in deltaS12_dict.items() if -maxfield <= key[0] <= maxfield}
+
+    # fields = set()
+    # angles = set()
+
+    # for (field, angle), s12 in deltaS12_dict.items():
+    #     fields.add(field)
+    #     angles.add(angle)
+
+    # print(f'Number of unique fields: {len(fields)}')
+    # print(f'Number of fields per angle: {len(fields) / len(angles)}')
+    # print(max(fields))
+    # print(f'Number of unique angles: {len(angles)}')
 
     return deltaS12_dict
 
@@ -279,7 +344,7 @@ def resonanceFields(DeltaS12_dict, abs=False, save=False):
     # Get resonance fields
     max_fields = {}
     for (field, angle), deltaS12 in DeltaS12_dict.items():
-        if angle not in max_fields or deltaS12 > max_fields[angle][1]:
+        if angle not in max_fields or deltaS12 < max_fields[angle][1]:  #change if delta S12 is positive or negative
             max_fields[angle] = (field, deltaS12)
 
     # Extract the field with maximum deltaS12 for each angle

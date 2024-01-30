@@ -5,7 +5,7 @@ def MinimizeG(Input):
    mue0H = abs(Input[0])        # Magnitude of ext field
    phiH = Input[1]              # Direction of ext field, input already in rad
    AniType = Input[2]           # For the switch below
-   phiu = np.deg2rad(Input[3])  # Anisotropy Axis
+   phiu = Input[3]  # Anisotropy Axis
    mue0Hani = Input[4]          # Magnitude of Anisotropy field
 
    # Convert H and phiH into proper polar coordinates
@@ -37,22 +37,17 @@ def MinimizeG(Input):
    return phi0
 
 
-def MinimizeGJu(Input):
-    mue0H = Input[0]       # Magnitude of ext field
-    phiH = Input[1]              # Direction of ext field, input already in rad
-    AniType = Input[2]           # For the switch below
-    phiu = np.deg2rad(Input[3])  # Anisotropy Axis
-    mue0Hani = Input[4]          # Magnitude of Anisotropy field
-
+def MinimizeGJu(params):
+    field, angle, AniType, phiu, mue0Hani = params
 
     # Initial guess for the minimum
-    if mue0H > 0:
-            initial_guess = phiH
+    if field > 0:
+            initial_guess = angle
     else:
-            initial_guess = phiH + np.pi
+            initial_guess = angle + np.pi
     
     # Use np.minimize_scalar to find the minimum
-    result = minimize(total_energy, initial_guess, args=(mue0H, phiH, AniType, mue0Hani, phiu), tol=1e-1) #method='Nelder-Mead',
+    result = minimize(total_energy, initial_guess, args=(field, angle, AniType, mue0Hani, phiu), tol=1e-1) #method='Nelder-Mead',
 
     # Extract the result
     phi0_minimized = result.x[0]
@@ -60,20 +55,20 @@ def MinimizeGJu(Input):
     return phi0_minimized
 
    
-
 # Define the function to minimize
-def total_energy(phi, mue0H, phiH, AniType, mue0Hani, phiu):
-    G_Zeeman = -mue0H * np.cos(phiH - phi)
+def total_energy(phi0, field, angle, AniType, mue0Hani, phiu):
+    G_Zeeman = -field * np.cos(angle - phi0)
     if AniType == 0:
-        G_Ani = -mue0Hani/2 * (np.cos(phiu - phi))**2
+        G_Ani = -mue0Hani/2 * (np.cos(phiu - phi0))**2
     elif AniType == 1:
-        G_Ani = -mue0Hani/2 * (np.cos(phiu - phi))**2 * (np.sin(phiu - phi))**2
+        G_Ani = -mue0Hani/2 * (np.cos(phiu - phi0))**2 * (np.sin(phiu - phi0))**2
     elif AniType == 2:
-        G_Ani = -mue0Hani/2 * (np.cos(3*(phiu - phi)/2))**2
+        G_Ani = -mue0Hani/2 * (np.cos(3*(phiu - phi0)/2))**2
     elif AniType == 3:
-        G_Ani = -mue0Hani/2 * (np.cos(3*(phiu - phi)))**2
+        G_Ani = -mue0Hani/2 * (np.cos(3*(phiu - phi0)))**2
     G = G_Zeeman + G_Ani
     return G
+
 
 
 def MinimizeGFast(field, angle):

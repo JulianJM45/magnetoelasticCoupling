@@ -4,43 +4,61 @@ from my_modules import *
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy.optimize import curve_fit
 from nptdms import TdmsFile
+# import platform
+
+# if platform.system() == 'Linux': input_folder = '/home/julian/Seafile/BAJulian/dataForPython/S11#3'
+# elif platform.system() == 'Windows': input_folder=r'C:\Users\Julian\Seafile\BAJulian\dataForPython\S11#3'
+
+input_folder = '../dataForPython/S11#3'
 
 
-
-# Define the path to your input TDMS file
-input_folder = r'C:\Users\Julian\Documents\BA\S11#3'
-# input_folder = '/home/julian/BA/dataForPython/S11#3'
-
-
-# name = 'Rayleigh'
-name = 'Sezawa'
+name = 'Rayleigh'
+# name = 'Sezawa'
 
 def main():
+    
+    S11 = loadDataTDMS()
 
-    # Fields, Frequencies, S21 = loadData()
+    S11_sub = extractFreq(S11, name=name)
+    S11_sub = sliceData(S11_sub, name=name)
+    S11fitted = FitLinear(S11_sub)
+    subtracted_values = {k: (S11_sub[k] - S11fitted[k]) * 1e3 for k in S11_sub.keys()}
 
-    S11 = loadDataDD()
-    # S11 = loadDataTDMS()
+    mygraph = Graph(width_cm=6)
+    mygraph.add_scatter([k * 1e3 for k in subtracted_values.keys()], subtracted_values.values(), label='Messdaten', s=4)
+    mygraph.add_plot([k * 1e3 for k in subtracted_values.keys()], subtracted_values.values(), label='Messdaten', color='blue')
+    mygraph.plot_Graph(save=True, legend=False, xlabel='$\mu_0H_0$\u2009(mT)', ylabel='$\Delta S_{11}$\u2009(mdB) ', name=f'S11_{name}')
+    
 
-    # S11_sub = extractFreq(S11, name=name)
+    # S11 = loadDataDD()
+    # X, Y, Z = CreateMatrix(S11)
 
-    # x = list(S11_sub.keys())
-    # y = list(S11_sub.values())
-
-    # I_S11_dict = Integrate(S11_sub)
-
-    # x = list(I_S11_dict.keys())
-    # y = list(I_S11_dict.values())
-
-    # GraphPlot(x, y, name='', ylabel='', save=False)
-
-
-    X, Y, Z = CreateMatrix(S11)
-
-    cmPlot(Z, X*1e3, Y*1e-9, name='S11', save=False, ylabel='$f$\u2009(GHz)', cbarlabel='d$S_{11}/$d$H$\u2009(dB)', cmap='seismic', equalBounds=True)
+    # cmPlot(Z, X*1e3, Y*1e-9, name='S11', save=True, ylabel='$f$\u2009(GHz)', cbarlabel='Re(d$S_{11}/$d$H$)\u2009(arb. u.)', cmap='seismic', width_cm=10.5, equalBounds=True)
 
 
+
+def FitLinear(meanS11):
+    xdata = list(meanS11.keys())
+    ydata = list(meanS11.values())
+    params, covariance = curve_fit(LinearFunc, xdata, ydata)
+    m, b = params
+    S11fitted = {k: LinearFunc(k, m, b) for k in meanS11.keys()}
+    return S11fitted
+
+
+def LinearFunc(x, m, b):
+    return m*x + b
+
+
+def sliceData(S11, name):
+    x1 = 22e-3
+    x2 = 80e-3
+        # Keep only the data for the meanS11 key from x1 to x2
+    S11 = {k: v for k, v in S11.items() if x1 <= k <= x2}
+
+    return S11
 
 def loadDataTDMS():
     filename = '2023-DEC-19-SequenceS11.tdms' 
@@ -54,6 +72,7 @@ def loadDataTDMS():
     Real = tdms_file['Read.ZNA']['S11_REAL'].data
     Imag = tdms_file['Read.ZNA']['S11_IMAG'].data
     S11 = Real ** 2 + Imag ** 2 
+    S11 = 10 * np.log10(S11)
 
     repFields = np.repeat(Fields, (len(S11)/len(Fields)))
 
