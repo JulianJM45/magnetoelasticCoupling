@@ -1,5 +1,5 @@
 # SET UP
-make sure you add the modules into your python path. I did it by adding a custom.pth file in .venv/lib/python3.11/site-packages with my directory, f.e.:  
+make sure you add the modules into your python path. I did it by adding a custom.pth file in .venv/lib/python3.11/site-packages with my directory, e.g.:  
 /home/julian/BAJulian/magnetoelasticCoupling  
 
 # analyze measurement:  
