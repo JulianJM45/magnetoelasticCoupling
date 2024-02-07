@@ -3,15 +3,13 @@ import os
 from my_modules import *
 from saw_simul_functions import *
 from scipy.optimize import curve_fit
-# from multiprocessing import Pool
 from sklearn.metrics import r2_score
-# import platform
 import numpy as np
 from collections import defaultdict
 
 
 name = 'Rayleigh'
-name = 'Sezawa'
+# name = 'Sezawa'
 
 
 input_folder = '../dataForPython/Field_Angle_Sweep#3'
@@ -39,10 +37,7 @@ def InitialGuess():
             'xz': 0.09-1.00j,
             'yz': 0.02+0.02j
         }
-    eps['xx'] =  (68.5599918997257+17.122278103400706j)
-    eps['xy'] =  (7.518160375585753-30.322126695128436j)
-    eps['xz'] =  (17.754438781091295-84.71784906405115j)
-    eps['yz'] =  (12.629232043550473+4.6202909648719j)
+
 
 
     eps_xxr, eps_xxi, eps_xyr, eps_xyi, eps_xzr, eps_xzi, eps_yzr, eps_yzi = SplitEps(eps)
@@ -185,8 +180,8 @@ def CalculationSweep(keys, *fitparams):
 
 
     for field, angle in mySWdirectory.keys():
-        mySWdirectory[field, angle].calcChi(alpha)           # only for fitting alpha
-        # mySWdirectory[field, angle].calcH_dr(b1=3.5, b2=7, eps=eps)
+        mySWdirectory[field, angle].calcChi(alpha)           
+        mySWdirectory[field, angle].calcH_dr(b1=3.5, b2=7, eps=eps)     #uncomment for fitting alpha
         mySWdirectory[field, angle].calcP_abs()
     
     P_absFittet = {}

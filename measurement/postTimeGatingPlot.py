@@ -31,7 +31,7 @@ def main():
 
     # PlotOneAngle(name, DeltaS12, angles=[0, 30, 42, 88], save=True)
 
-    # ResFields = resonanceFields(DeltaS12, abs=False, save=False)     #abs=True for calcOffset, abs=False for resonanceS21
+    # ResFields = resonanceFields(DeltaS12, abs=False, save=False)     #abs=True for calcOffset and save, abs=False for resonanceS21
 
     # calcOffset(ResFields)
 
@@ -96,7 +96,7 @@ def calcRes21(ResS21_dict, save=False, sign='neg', angles=[0]):
 
 def resonanceS21(DeltaS12_dict, ResFields, save=False):
     ResS21 = {}
-    kth = 8
+    kth = 0
 
 
     if name == 'Rayleigh': x0=34.23
