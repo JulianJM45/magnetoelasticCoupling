@@ -29,11 +29,11 @@ def main():
     
     # exportData(DeltaS12)
 
-    PlotOneAngle(name, DeltaS12, angles=[0, 30, 42, 88], save=True)
+    # PlotOneAngle(name, DeltaS12, angles=[0, 30, 42, 88], save=True)
 
     # ResFields = resonanceFields(DeltaS12, abs=False, save=False)     #abs=True for calcOffset, abs=False for resonanceS21
 
-    # # # calcOffset(ResFields)
+    # calcOffset(ResFields)
 
     # ResS21 = resonanceS21(DeltaS12, ResFields, save=True)   
 
