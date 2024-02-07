@@ -35,8 +35,6 @@ def main():
     mygraph.plot_Graph(save=False, show=True, legend=True, name=f'ResFields_{name}', xlabel='$|\mu_0H_0|$\u2009(mT)', ylabel='$\phi_H$\u2009(°)')
 
 
-
-
 def loadData():
     # Define file paths
     if name == 'Rayleigh': filename = 'ResFields_Rayleigh.txt'
@@ -84,11 +82,6 @@ def ResFit(Fields, Angles):
 
     # return phiu_fit, mu_0Hani_fit, t_fit, A_fit
     return phiu_fit, mu_0Hani_fit, t_fit, A_fit, mu_0Ms_fit, g_fit
-
-
-
-
-
 
 
 def getInitials():
